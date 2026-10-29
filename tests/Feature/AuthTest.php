@@ -281,6 +281,8 @@ class AuthTest extends TestCase
         $regRes->assertStatus(200);
         $regRes->assertSee('+91');
         $regRes->assertSee('Enter 10-digit mobile number');
+        $regRes->assertSee('placeholder="Your Name"', false);
+        $regRes->assertDontSee('placeholder="Sumanta Das"', false);
     }
 
     public function test_login_page_does_not_contain_quick_demo_login_section_or_demo_credentials(): void

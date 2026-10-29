@@ -20,7 +20,7 @@
             <div>
                 <label class="block font-bold text-[#1F1F39] mb-1 font-rubik">Full Name</label>
                 <input type="text" name="name" value="{{ old('name') }}" required autofocus
-                       placeholder="Sumanta Das"
+                       placeholder="Your Name"
                        class="w-full p-3 rounded-xl border @error('name') border-rose-400 bg-rose-50/30 @else border-[#EFF0F6] @enderror focus:border-primary focus:outline-none text-[#1F1F39]">
                 @error('name')
                     <p class="text-[11px] text-rose-600 font-bold mt-1">{{ $message }}</p>

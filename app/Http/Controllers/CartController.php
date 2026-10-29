@@ -47,7 +47,19 @@ class CartController extends Controller
         );
 
         if ($request->wantsJson() || $request->ajax()) {
-            return response()->json($result);
+            if (!$result['success']) {
+                return response()->json($result);
+            }
+
+            $orderType = $request->input('order_type', 'delivery');
+            $totals = $this->cartService->calculateTotals(null, $orderType, auth()->id());
+
+            return response()->json(array_merge($result, [
+                'totals' => $totals,
+                'items' => array_values($totals['items']),
+                'cart_count' => $totals['items_count'],
+                'cart_subtotal' => $totals['subtotal'],
+            ]));
         }
 
         if (!$result['success']) {
@@ -67,8 +79,15 @@ class CartController extends Controller
         $result = $this->cartService->updateQuantity($validated['item_key'], (int) $validated['quantity']);
 
         if ($request->wantsJson() || $request->ajax()) {
-            $totals = $this->cartService->calculateTotals(null, 'delivery', auth()->id());
-            return response()->json(array_merge($result, ['totals' => $totals]));
+            $orderType = $request->input('order_type', 'delivery');
+            $totals = $this->cartService->calculateTotals(null, $orderType, auth()->id());
+
+            return response()->json(array_merge($result, [
+                'totals' => $totals,
+                'items' => array_values($totals['items']),
+                'cart_count' => $totals['items_count'],
+                'cart_subtotal' => $totals['subtotal'],
+            ]));
         }
 
         return back()->with('success', 'Cart updated successfully.');
@@ -83,8 +102,15 @@ class CartController extends Controller
         $result = $this->cartService->removeItem($validated['item_key']);
 
         if ($request->wantsJson() || $request->ajax()) {
-            $totals = $this->cartService->calculateTotals(null, 'delivery', auth()->id());
-            return response()->json(array_merge($result, ['totals' => $totals]));
+            $orderType = $request->input('order_type', 'delivery');
+            $totals = $this->cartService->calculateTotals(null, $orderType, auth()->id());
+
+            return response()->json(array_merge($result, [
+                'totals' => $totals,
+                'items' => array_values($totals['items']),
+                'cart_count' => $totals['items_count'],
+                'cart_subtotal' => $totals['subtotal'],
+            ]));
         }
 
         return back()->with('success', 'Item removed from your cart.');
@@ -99,8 +125,15 @@ class CartController extends Controller
         $result = $this->cartService->applyCoupon($validated['coupon_code'], auth()->id());
 
         if ($request->wantsJson() || $request->ajax()) {
-            $totals = $this->cartService->calculateTotals(null, 'delivery', auth()->id());
-            return response()->json(array_merge($result, ['totals' => $totals]));
+            $orderType = $request->input('order_type', 'delivery');
+            $totals = $this->cartService->calculateTotals(null, $orderType, auth()->id());
+
+            return response()->json(array_merge($result, [
+                'totals' => $totals,
+                'items' => array_values($totals['items']),
+                'cart_count' => $totals['items_count'],
+                'cart_subtotal' => $totals['subtotal'],
+            ]));
         }
 
         if (!$result['success']) {
@@ -115,25 +148,35 @@ class CartController extends Controller
         $this->cartService->removeCoupon();
 
         if ($request->wantsJson() || $request->ajax()) {
-            $totals = $this->cartService->calculateTotals(null, 'delivery', auth()->id());
+            $orderType = $request->input('order_type', 'delivery');
+            $totals = $this->cartService->calculateTotals(null, $orderType, auth()->id());
+
             return response()->json([
                 'success' => true,
                 'message' => 'Coupon removed.',
                 'totals' => $totals,
+                'items' => array_values($totals['items']),
+                'cart_count' => $totals['items_count'],
+                'cart_subtotal' => $totals['subtotal'],
             ]);
         }
 
         return back()->with('info', 'Promo coupon removed.');
     }
 
-    public function summary(): JsonResponse
+    public function summary(Request $request): JsonResponse
     {
-        $totals = $this->cartService->calculateTotals(null, 'delivery', auth()->id());
+        $orderType = $request->input('order_type', 'delivery');
+        $totals = $this->cartService->calculateTotals(null, $orderType, auth()->id());
+
         return response()->json([
             'success' => true,
             'count' => $totals['items_count'],
+            'cart_count' => $totals['items_count'],
             'subtotal' => $totals['subtotal'],
+            'cart_subtotal' => $totals['subtotal'],
             'total' => $totals['total_amount'],
+            'totals' => $totals,
             'items' => array_values($totals['items']),
         ]);
     }
