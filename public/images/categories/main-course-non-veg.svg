@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="100%" height="100%">
+  <defs>
+    <radialGradient id="chickenKosha" cx="50%" cy="45%" r="55%">
+      <stop offset="0%" stop-color="#DC2626" />
+      <stop offset="65%" stop-color="#991B1B" />
+      <stop offset="100%" stop-color="#7F1D1D" />
+    </radialGradient>
+    <filter id="chickenShadow" x="-10%" y="-10%" width="125%" height="125%">
+      <feDropShadow dx="0" dy="6" stdDeviation="6" flood-color="#000000" flood-opacity="0.18" />
+    </filter>
+  </defs>
+  <g filter="url(#chickenShadow)">
+    <!-- Dark Clay Bowl -->
+    <ellipse cx="100" cy="140" rx="68" ry="36" fill="#1C1917" />
+    <ellipse cx="100" cy="115" rx="74" ry="45" fill="#292524" />
+    <ellipse cx="100" cy="85" rx="70" ry="32" fill="#44403C" stroke="#78716C" stroke-width="3" />
+
+    <!-- Rich Chicken Kosha Gravy -->
+    <ellipse cx="100" cy="85" rx="64" ry="26" fill="url(#chickenKosha)" />
+
+    <!-- Tender Spiced Chicken Leg / Drumstick -->
+    <g transform="translate(70, 68) rotate(-15)">
+      <ellipse cx="25" cy="15" rx="18" ry="12" fill="#78350F" stroke="#92400E" stroke-width="1" />
+      <rect x="36" y="11" width="22" height="7" rx="3.5" fill="#F8FAFC" stroke="#E2E8F0" stroke-width="1" />
+      <circle cx="58" cy="12" r="4.5" fill="#F8FAFC" />
+      <circle cx="58" cy="17" r="4.5" fill="#F8FAFC" />
+    </g>
+
+    <!-- Potato / Aloo in Gravy -->
+    <ellipse cx="132" cy="90" rx="14" ry="10" fill="#D97706" stroke="#B45309" stroke-width="1" />
+
+    <!-- Green Chili & Ginger Slivers -->
+    <path d="M 85 92 Q 95 86 105 92" stroke="#22C55E" stroke-width="3.5" stroke-linecap="round" fill="none" />
+    <path d="M 98 80 L 108 83" stroke="#FEF08A" stroke-width="2" stroke-linecap="round" />
+    <path d="M 102 77 L 112 81" stroke="#FEF08A" stroke-width="2" stroke-linecap="round" />
+  </g>
+</svg>

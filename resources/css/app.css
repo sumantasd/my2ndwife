@@ -1,0 +1,252 @@
+@import 'tailwindcss';
+
+@source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
+@source '../../storage/framework/views/*.php';
+@source '../**/*.blade.php';
+@source '../**/*.js';
+
+@theme {
+    --color-primary: #FF006B;
+    --color-primary-hover: #E60060;
+    --color-primary-light: #FFF0F6;
+    --color-secondary: #FF3D96;
+    --color-heading: #1F1F39;
+    --color-dark: #1F1F39;
+    --color-paragraph: #6E7191;
+    --color-body: #6E7191;
+    --color-bg-main: #F7F7FC;
+    --color-border-light: #EFF0F6;
+    --color-border-pink: #F0E6EC;
+    --color-success: #1AB759;
+    --color-danger: #FB4E4E;
+    --color-error: #FB4E4E;
+    --color-pos: #FF8A26;
+    --color-teal: #008BBA;
+
+    --font-rubik: 'Rubik', sans-serif;
+    --font-sans: 'Public Sans', 'Rubik', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+:root {
+    --primary: 255 0 107;
+    --theme-primary: #FF006B;
+    --theme-secondary: #FF3D96;
+    --theme-heading: #1F1F39;
+    --theme-dark: #1F1F39;
+    --theme-body: #6E7191;
+    --theme-bg: #FFFFFF;
+    --theme-bg-soft: #F7F7FC;
+    --theme-soft-pink: #FFF0F6;
+    --theme-border: #EFF0F6;
+}
+
+/* Prevent Alpine.js Cloak, Ghost Overlays & FOUC */
+[x-cloak] {
+    display: none !important;
+}
+
+/* Base styles & typography defaults */
+@layer base {
+    body {
+        font-family: var(--font-sans);
+        color: #6E7191;
+        background-color: #F7F7FC;
+        font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+        -webkit-tap-highlight-color: transparent;
+    }
+
+    h1, h2, h3, h4, h5, h6 {
+        font-family: 'Rubik', sans-serif;
+        color: #1F1F39;
+    }
+}
+
+.text-heading {
+    color: #1F1F39;
+}
+
+.text-paragraph {
+    color: #6E7191;
+}
+
+.bg-primary {
+    background-color: #FF006B;
+}
+
+.text-primary {
+    color: #FF006B;
+}
+
+.border-primary {
+    border-color: #FF006B;
+}
+
+.bg-soft-pink {
+    background-color: #FFF0F6;
+}
+
+.border-brand-pink {
+    border-color: #EFF0F6;
+}
+
+.brand-shadow {
+    box-shadow: 0 10px 30px -10px rgba(255, 0, 107, 0.12), 0 4px 12px -2px rgba(0, 0, 0, 0.05);
+}
+
+.brand-card-hover {
+    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.brand-card-hover:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 20px 35px -12px rgba(255, 0, 107, 0.18), 0 8px 16px -4px rgba(0, 0, 0, 0.06);
+}
+
+/* Glassmorphism & Sticky Header */
+.glass-nav {
+    background: rgba(255, 255, 255, 0.96);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+}
+
+.header-active {
+    box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.06);
+    background-color: #FFFFFF !important;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+::-webkit-scrollbar-track {
+    background: #F7F7FC;
+}
+::-webkit-scrollbar-thumb {
+    background: #EFF0F6;
+    border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+    background: #FF006B;
+}
+
+/* Hide scrollbar for horizontal mobile swipe carousels */
+.no-scrollbar::-webkit-scrollbar {
+    display: none;
+}
+.no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
+
+/* Mobile safe area padding */
+.pb-safe {
+    padding-bottom: max(0.5rem, env(safe-area-inset-bottom, 0.5rem));
+}
+
+/* Print styles for Invoice */
+@media print {
+    body {
+        background: #ffffff !important;
+        color: #000000 !important;
+    }
+    .no-print {
+        display: none !important;
+    }
+    .print-only {
+        display: block !important;
+    }
+    .print-shadow-none {
+        box-shadow: none !important;
+    }
+}
+
+/* Responsive 20:7 Homepage Promotional Banner */
+.homepage-banner {
+    width: 100%;
+    aspect-ratio: 20 / 7;
+    overflow: hidden;
+    background: #ffffff;
+}
+
+.homepage-banner img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    object-position: center;
+}
+
+@media (max-width: 768px) {
+    .homepage-banner {
+        width: 100%;
+        aspect-ratio: 20 / 7;
+        height: auto;
+    }
+
+    .homepage-banner img {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+    }
+}
+
+/* Homepage Category Carousel (7 items in desktop row, responsive & scrollable for more) */
+.category-carousel-item {
+    flex-shrink: 0;
+    scroll-snap-align: start;
+    width: 7.5rem;
+    min-width: 7.5rem;
+}
+
+@media (min-width: 640px) {
+    .category-carousel-item {
+        width: 8.5rem;
+        min-width: 8.5rem;
+    }
+}
+
+@media (min-width: 768px) {
+    .category-carousel-item {
+        width: 9.5rem;
+        min-width: 9.5rem;
+    }
+}
+
+@media (min-width: 1024px) {
+    .category-carousel-item {
+        width: calc((100% - (6 * 1rem)) / 7);
+        min-width: 140px;
+    }
+}
+
+/* Homepage Product Carousel (Exactly 5 items visible in desktop row, swipeable on mobile) */
+.product-carousel-item {
+    flex-shrink: 0;
+    scroll-snap-align: start;
+    width: 11.5rem;
+    min-width: 11.5rem;
+}
+
+@media (min-width: 640px) {
+    .product-carousel-item {
+        width: 12.5rem;
+        min-width: 12.5rem;
+    }
+}
+
+@media (min-width: 768px) {
+    .product-carousel-item {
+        width: calc((100% - (2 * 1rem)) / 3);
+        min-width: 200px;
+    }
+}
+
+@media (min-width: 1024px) {
+    .product-carousel-item {
+        width: calc((100% - (4 * 1rem)) / 5);
+        min-width: 180px;
+    }
+}
+
+

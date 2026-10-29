@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="100%" height="100%">
+  <defs>
+    <filter id="sweetShadow" x="-10%" y="-10%" width="125%" height="125%">
+      <feDropShadow dx="0" dy="5" stdDeviation="5" flood-color="#000000" flood-opacity="0.15" />
+    </filter>
+  </defs>
+  <g filter="url(#sweetShadow)">
+    <!-- Earthen Sweet Bowl -->
+    <ellipse cx="100" cy="125" rx="65" ry="32" fill="#78350F" />
+    <ellipse cx="100" cy="105" rx="62" ry="24" fill="#92400E" stroke="#B45309" stroke-width="2" />
+
+    <!-- Sweet Rose-Cardamom Syrup -->
+    <ellipse cx="100" cy="105" rx="55" ry="18" fill="#F59E0B" opacity="0.75" />
+
+    <!-- Golden Brown Gulab Jamun 1 -->
+    <circle cx="80" cy="100" r="18" fill="#78350F" stroke="#92400E" stroke-width="1.5" />
+    <ellipse cx="76" cy="94" rx="5" ry="3" fill="#D97706" opacity="0.6" />
+    <!-- Pistachio sliver -->
+    <ellipse cx="78" cy="98" rx="2.5" ry="1" fill="#22C55E" />
+
+    <!-- Gulab Jamun 2 -->
+    <circle cx="118" cy="102" r="17" fill="#78350F" stroke="#92400E" stroke-width="1.5" />
+    <ellipse cx="114" cy="96" rx="5" ry="3" fill="#D97706" opacity="0.6" />
+    <ellipse cx="116" cy="100" rx="2.5" ry="1" fill="#22C55E" />
+
+    <!-- Gulab Jamun 3 (Front Center) -->
+    <circle cx="100" cy="112" r="17" fill="#6B2807" stroke="#92400E" stroke-width="1.5" />
+    <ellipse cx="96" cy="106" rx="5" ry="3" fill="#D97706" opacity="0.6" />
+    <ellipse cx="99" cy="110" rx="3" ry="1.2" fill="#22C55E" />
+  </g>
+</svg>

@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 350" width="100%" height="100%">
+  <rect width="800" height="350" rx="24" fill="#E8F8F2" stroke="#D5EFE5" stroke-width="2" />
+  <text x="60" y="100" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="16" font-weight="700" fill="#FF006B">Uplifting anytime</text>
+  <text x="60" y="150" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="26" font-weight="800" fill="#1F1F39">Flat 20% off on Dum Biryani</text>
+  <text x="60" y="185" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="14" fill="#4B5563">Slow dum-cooked with royal saffron & spices</text>
+  <rect x="60" y="225" width="140" height="42" rx="21" fill="#1F1F39" />
+  <text x="130" y="251" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="14" font-weight="700" fill="#FFFFFF" text-anchor="middle">Order Now</text>
+  <circle cx="640" cy="175" r="100" fill="#FFFFFF" fill-opacity="0.8" />
+  <text x="640" y="195" font-size="90" text-anchor="middle" dominant-baseline="middle">🍗</text>
+</svg>

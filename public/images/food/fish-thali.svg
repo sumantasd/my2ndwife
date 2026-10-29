@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 400" width="100%" height="100%">
+  <defs>
+    <linearGradient id="fgrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1E3A8A" />
+      <stop offset="100%" stop-color="#3B82F6" />
+    </linearGradient>
+    <radialGradient id="fglow" cx="50%" cy="40%" r="60%">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.25" />
+      <stop offset="100%" stop-color="#000000" stop-opacity="0.35" />
+    </radialGradient>
+  </defs>
+  <rect width="600" height="400" fill="url(#fgrad)" />
+  <rect width="600" height="400" fill="url(#fglow)" />
+  
+  <!-- Outer Plate / Thali Ring -->
+  <circle cx="300" cy="165" r="115" fill="#ffffff" fill-opacity="0.12" stroke="#ffffff" stroke-width="3" stroke-opacity="0.3" />
+  <circle cx="300" cy="165" r="95" fill="#ffffff" fill-opacity="0.18" />
+  <circle cx="300" cy="165" r="80" fill="#000000" fill-opacity="0.15" />
+  
+  <!-- Food Icon -->
+  <text x="300" y="190" font-size="82" text-anchor="middle" dominant-baseline="middle">🐟</text>
+  
+  <!-- Price Pill -->
+  <g transform="translate(480, 24)">
+    <rect x="0" y="0" width="95" height="34" rx="17" fill="#F50070" filter="drop-shadow(0 2px 4px rgba(0,0,0,0.3))" />
+    <text x="47" y="22" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="16" font-weight="800" fill="#ffffff" text-anchor="middle">₹180</text>
+  </g>
+  
+  <!-- Badge Pill -->
+  <g transform="translate(25, 24)">
+    <rect x="0" y="0" width="130" height="28" rx="14" fill="#000000" fill-opacity="0.45" />
+    <text x="65" y="19" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="11" font-weight="800" fill="#ffffff" text-anchor="middle" letter-spacing="0.5">BENGALI SPECIAL</text>
+  </g>
+
+  <!-- Bottom Details Bar -->
+  <rect x="0" y="285" width="600" height="115" fill="#18181B" fill-opacity="0.92" />
+  <text x="300" y="328" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="22" font-weight="800" fill="#ffffff" text-anchor="middle">Fish Thali</text>
+  <text x="300" y="360" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="13" fill="#D4D4D8" text-anchor="middle">Fish Curry, Rice, 4 Roti, Salad</text>
+  <text x="300" y="385" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="11" font-weight="600" fill="#F50070" text-anchor="middle">MY 2ND WIFE • FRESHLY PREPARED</text>
+</svg>

@@ -1,0 +1,18 @@
+{
+  "name": "My 2nd Wife - Food Delivery",
+  "short_name": "My 2nd Wife",
+  "description": "Premium Single Restaurant Food Delivery Web Application",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#FFFFFF",
+  "theme_color": "#F50070",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/images/defaults/favicon.svg",
+      "sizes": "192x192 512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

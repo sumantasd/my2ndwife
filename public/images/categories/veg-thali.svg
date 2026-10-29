@@ -1,0 +1,52 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="100%" height="100%">
+  <defs>
+    <radialGradient id="thaliPlatter" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#E2E8F0" />
+      <stop offset="85%" stop-color="#CBD5E1" />
+      <stop offset="100%" stop-color="#94A3B8" />
+    </radialGradient>
+    <filter id="thaliShadow" x="-10%" y="-10%" width="125%" height="125%">
+      <feDropShadow dx="0" dy="5" stdDeviation="6" flood-color="#000000" flood-opacity="0.15" />
+    </filter>
+  </defs>
+  <g filter="url(#thaliShadow)">
+    <!-- Stainless Steel Platter -->
+    <circle cx="100" cy="100" r="90" fill="url(#thaliPlatter)" stroke="#94A3B8" stroke-width="4" />
+    <circle cx="100" cy="100" r="82" fill="#F1F5F9" stroke="#E2E8F0" stroke-width="2" />
+
+    <!-- Rice Mound (Center) -->
+    <circle cx="100" cy="100" r="30" fill="#FFFFFF" stroke="#E2E8F0" stroke-width="1.5" />
+    <circle cx="100" cy="100" r="28" fill="#F8FAFC" />
+    <ellipse cx="100" cy="98" rx="4" ry="2" fill="#16A34A" /> <!-- Mint leaf -->
+
+    <!-- Dal Tadka Bowl (Top) -->
+    <circle cx="100" cy="40" r="22" fill="#E2E8F0" stroke="#94A3B8" stroke-width="1.5" />
+    <circle cx="100" cy="40" r="19" fill="#F59E0B" />
+    <circle cx="100" cy="40" r="17" fill="#D97706" />
+    <path d="M 96 38 Q 100 34 104 38 Q 100 42 96 38" fill="#DC2626" opacity="0.8" />
+
+    <!-- Paneer Curry Bowl (Top Right) -->
+    <circle cx="145" cy="65" r="21" fill="#E2E8F0" stroke="#94A3B8" stroke-width="1.5" />
+    <circle cx="145" cy="65" r="18" fill="#EA580C" />
+    <rect x="140" y="60" width="7" height="6" rx="1" fill="#FEF08A" />
+    <rect x="146" y="64" width="6" height="5" rx="1" fill="#FEF08A" />
+
+    <!-- Sabzi Bowl (Bottom Right) -->
+    <circle cx="145" cy="135" r="21" fill="#E2E8F0" stroke="#94A3B8" stroke-width="1.5" />
+    <circle cx="145" cy="135" r="18" fill="#15803D" />
+    <circle cx="143" cy="133" r="3" fill="#84CC16" />
+    <circle cx="148" cy="137" r="3.5" fill="#DC2626" />
+
+    <!-- Roti / Chapati (Left) -->
+    <circle cx="55" cy="95" r="24" fill="#FDE68A" stroke="#D97706" stroke-width="1.5" />
+    <circle cx="53" cy="93" r="4" fill="#B45309" opacity="0.3" />
+    <circle cx="61" cy="99" r="3" fill="#B45309" opacity="0.3" />
+    <circle cx="50" cy="103" r="3.5" fill="#B45309" opacity="0.25" />
+
+    <!-- Salad & Pickle (Bottom Left) -->
+    <circle cx="65" cy="145" r="17" fill="#E2E8F0" stroke="#94A3B8" stroke-width="1.5" />
+    <circle cx="65" cy="145" r="14" fill="#FFFFFF" />
+    <circle cx="62" cy="144" r="5" fill="#22C55E" />
+    <circle cx="68" cy="147" r="4" fill="#EF4444" />
+  </g>
+</svg>

@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="100%" height="100%">
+  <defs>
+    <filter id="rotiShadow" x="-10%" y="-10%" width="125%" height="125%">
+      <feDropShadow dx="0" dy="5" stdDeviation="5" flood-color="#000000" flood-opacity="0.15" />
+    </filter>
+  </defs>
+  <g filter="url(#rotiShadow)">
+    <!-- Rice Bowl (Right) -->
+    <ellipse cx="135" cy="130" rx="45" ry="25" fill="#334155" />
+    <ellipse cx="135" cy="115" rx="45" ry="22" fill="#475569" stroke="#64748B" stroke-width="2" />
+    <!-- White Fragrant Basmati Rice Mound -->
+    <ellipse cx="135" cy="110" rx="40" ry="18" fill="#FFFFFF" />
+    <ellipse cx="135" cy="105" rx="34" ry="14" fill="#F8FAFC" />
+    <!-- Jeera Cumin garnish -->
+    <ellipse cx="130" cy="104" rx="2" ry="0.8" fill="#78350F" />
+    <ellipse cx="140" cy="108" rx="2" ry="0.8" fill="#78350F" />
+    <ellipse cx="135" cy="102" rx="3" ry="1.5" fill="#16A34A" />
+
+    <!-- Tandoori Roti / Butter Naan (Left, overlapping) -->
+    <!-- Roti 1 (Behind) -->
+    <ellipse cx="65" cy="115" rx="48" ry="34" fill="#FDE68A" stroke="#D97706" stroke-width="2" transform="rotate(-15, 65, 115)" />
+    <!-- Char Marks -->
+    <circle cx="55" cy="110" r="3" fill="#92400E" opacity="0.6" />
+    <circle cx="70" cy="118" r="4" fill="#92400E" opacity="0.5" />
+    <circle cx="80" cy="108" r="3" fill="#92400E" opacity="0.6" />
+
+    <!-- Naan 2 (Front with butter glaze) -->
+    <path d="M 40 145 C 30 110 50 75 75 80 C 100 85 95 125 70 145 Z" fill="#FEF08A" stroke="#CA8A04" stroke-width="2" />
+    <!-- Butter Glaze & Coriander -->
+    <ellipse cx="62" cy="105" rx="8" ry="5" fill="#FACC15" opacity="0.8" />
+    <circle cx="65" cy="118" r="2.5" fill="#15803D" />
+    <circle cx="58" cy="98" r="2" fill="#15803D" />
+    <circle cx="52" cy="120" r="3" fill="#78350F" opacity="0.6" />
+    <circle cx="68" cy="92" r="3" fill="#78350F" opacity="0.6" />
+  </g>
+</svg>

@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="100%" height="100%">
+  <defs>
+    <filter id="drinkShadow" x="-10%" y="-10%" width="125%" height="125%">
+      <feDropShadow dx="0" dy="5" stdDeviation="5" flood-color="#000000" flood-opacity="0.15" />
+    </filter>
+  </defs>
+  <g filter="url(#drinkShadow)">
+    <!-- Terracotta Kulhad / Clay Cup (Left) -->
+    <path d="M 45 65 L 55 145 Q 75 152 95 145 L 105 65 Z" fill="#C2410C" stroke="#9A3412" stroke-width="2" />
+    <ellipse cx="75" cy="65" rx="30" ry="10" fill="#EA580C" stroke="#9A3412" stroke-width="2" />
+    <!-- Frothy Masala Chaas / Lassi -->
+    <ellipse cx="75" cy="65" rx="27" ry="8" fill="#FEF9C3" />
+    <ellipse cx="75" cy="64" rx="6" ry="2.5" fill="#15803D" /> <!-- Mint -->
+    <circle cx="82" cy="65" r="1.5" fill="#B45309" /> <!-- Roasted cumin -->
+
+    <!-- Tall Refreshing Glass (Right) -->
+    <path d="M 115 50 L 122 150 Q 142 155 162 150 L 169 50 Z" fill="#38BDF8" fill-opacity="0.35" stroke="#0284C7" stroke-width="2" />
+    <!-- Juice Liquid -->
+    <path d="M 117 75 L 122 148 Q 142 153 162 148 L 167 75 Z" fill="#F59E0B" fill-opacity="0.85" />
+    <!-- Ice cubes -->
+    <rect x="130" y="85" width="16" height="16" rx="3" fill="#FFFFFF" fill-opacity="0.6" stroke="#E0F2FE" stroke-width="1" />
+    <rect x="136" y="110" width="14" height="14" rx="3" fill="#FFFFFF" fill-opacity="0.5" stroke="#E0F2FE" stroke-width="1" />
+    <!-- Straw -->
+    <line x1="155" y1="28" x2="135" y2="140" stroke="#EC4899" stroke-width="4.5" stroke-linecap="round" />
+    <!-- Lemon Wheel on Rim -->
+    <circle cx="115" cy="50" r="16" fill="#FACC15" stroke="#EAB308" stroke-width="2" />
+    <circle cx="115" cy="50" r="12" fill="#FEF08A" />
+    <line x1="115" y1="38" x2="115" y2="62" stroke="#EAB308" stroke-width="1" />
+    <line x1="103" y1="50" x2="127" y2="50" stroke="#EAB308" stroke-width="1" />
+  </g>
+</svg>

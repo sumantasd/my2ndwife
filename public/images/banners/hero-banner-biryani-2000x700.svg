@@ -1,0 +1,116 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 2000 700" width="2000" height="700">
+  <defs>
+    <!-- Background Gradient -->
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FF006B"/>
+      <stop offset="45%" stop-color="#E60060"/>
+      <stop offset="85%" stop-color="#700030"/>
+      <stop offset="100%" stop-color="#1F1F39"/>
+    </linearGradient>
+
+    <!-- Secondary Lighting -->
+    <radialGradient id="glow" cx="80%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#FF3D96" stop-opacity="0.4"/>
+      <stop offset="100%" stop-color="#1F1F39" stop-opacity="0"/>
+    </radialGradient>
+
+    <!-- Platter Radial -->
+    <radialGradient id="platterGrad" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#FFFFFF"/>
+      <stop offset="80%" stop-color="#FEF3C7"/>
+      <stop offset="100%" stop-color="#F59E0B"/>
+    </radialGradient>
+
+    <!-- Dropshadow -->
+    <filter id="shadow" x="-10%" y="-10%" width="130%" height="130%">
+      <feDropShadow dx="0" dy="16" stdDeviation="20" flood-color="#000000" flood-opacity="0.4"/>
+    </filter>
+  </defs>
+
+  <!-- Background Base -->
+  <rect width="2000" height="700" fill="url(#bgGrad)"/>
+  <rect width="2000" height="700" fill="url(#glow)"/>
+
+  <!-- Subtle Decorative Background Circles -->
+  <circle cx="1700" cy="350" r="450" fill="#FFFFFF" opacity="0.04"/>
+  <circle cx="1700" cy="350" r="320" fill="#FFFFFF" opacity="0.03"/>
+  <circle cx="200" cy="100" r="250" fill="#FFFFFF" opacity="0.03"/>
+
+  <!-- Left Content: Promotional Typography & Elements -->
+  <g transform="translate(140, 150)">
+    <!-- Brand Tag -->
+    <rect x="0" y="0" width="340" height="44" rx="22" fill="#FFFFFF" opacity="0.18"/>
+    <circle cx="26" cy="22" r="7" fill="#FFFFFF"/>
+    <text x="48" y="28" font-family="'Rubik', 'Segoe UI', Arial, sans-serif" font-weight="900" font-size="16" fill="#FFFFFF" letter-spacing="3">MY 2ND WIFE SPECIAL</text>
+
+    <!-- Offer Badge -->
+    <g transform="translate(0, 65)">
+      <rect x="0" y="0" width="310" height="52" rx="26" fill="#FDE047"/>
+      <text x="28" y="35" font-family="'Rubik', 'Segoe UI', Arial, sans-serif" font-weight="900" font-size="24" fill="#1F1F39" letter-spacing="1">FLAT 20% OFF</text>
+    </g>
+
+    <!-- Main Headline -->
+    <text x="0" y="195" font-family="'Rubik', 'Segoe UI', Arial, sans-serif" font-weight="900" font-size="58" fill="#FFFFFF" letter-spacing="-1">
+      Royal Dum Biryani &amp; Starters
+    </text>
+
+    <!-- Subtitle -->
+    <text x="0" y="250" font-family="'Public Sans', 'Segoe UI', Arial, sans-serif" font-weight="500" font-size="24" fill="#FFFFFF" opacity="0.9">
+      Slow cooked in authentic clay handis with pure saffron, tender chicken &amp; aromatic spices.
+    </text>
+
+    <!-- CTA & Delivery Info -->
+    <g transform="translate(0, 290)">
+      <!-- Order Now Button -->
+      <rect x="0" y="0" width="220" height="60" rx="30" fill="#FFFFFF" filter="url(#shadow)"/>
+      <text x="50" y="38" font-family="'Rubik', 'Segoe UI', Arial, sans-serif" font-weight="900" font-size="20" fill="#FF006B">Order Now →</text>
+
+      <!-- Delivery Promise -->
+      <g transform="translate(260, 20)">
+        <circle cx="16" cy="12" r="16" fill="#10B981"/>
+        <path d="M10 12 L15 17 L23 8" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+        <text x="45" y="18" font-family="'Public Sans', 'Segoe UI', Arial, sans-serif" font-weight="700" font-size="18" fill="#FFFFFF">Hot &amp; Fresh Doorstep Delivery in 30 Mins</text>
+      </g>
+    </g>
+  </g>
+
+  <!-- Right Visual: Authentic Handi Biryani Graphic -->
+  <g transform="translate(1500, 360)" filter="url(#shadow)">
+    <!-- Serving Platter -->
+    <ellipse cx="0" cy="120" rx="360" ry="170" fill="url(#platterGrad)" stroke="#B45309" stroke-width="6"/>
+
+    <!-- Clay Handi Base -->
+    <ellipse cx="0" cy="90" rx="220" ry="90" fill="#78350F"/>
+    <ellipse cx="0" cy="20" rx="240" ry="110" fill="#92400E"/>
+    <ellipse cx="0" cy="-60" rx="220" ry="85" fill="#B45309" stroke="#78350F" stroke-width="5"/>
+
+    <!-- Fragrant Saffron Biryani Rice -->
+    <ellipse cx="0" cy="-65" rx="205" ry="75" fill="#F59E0B"/>
+    <ellipse cx="0" cy="-70" rx="180" ry="60" fill="#FBBF24"/>
+    <ellipse cx="0" cy="-73" rx="150" ry="48" fill="#FDE047"/>
+
+    <!-- Roasted Spiced Chicken Leg -->
+    <g transform="translate(-100, -140) rotate(-15)">
+      <ellipse cx="90" cy="45" rx="75" ry="40" fill="#78350F" stroke="#92400E" stroke-width="4"/>
+      <ellipse cx="70" cy="40" rx="60" ry="30" fill="#9A3412"/>
+      <rect x="150" y="36" width="60" height="20" rx="10" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="3"/>
+      <circle cx="210" cy="40" r="12" fill="#F8FAFC"/>
+      <circle cx="210" cy="52" r="12" fill="#F8FAFC"/>
+    </g>
+
+    <!-- Golden Boiled Egg -->
+    <ellipse cx="70" cy="-75" rx="35" ry="24" fill="#FFFFFF" stroke="#E2E8F0" stroke-width="2"/>
+    <circle cx="68" cy="-75" r="14" fill="#F59E0B"/>
+
+    <!-- Fresh Mint & Coriander Garnish -->
+    <path d="M-60 -90 Q-75 -110 -50 -120 Q-25 -110 -40 -90" fill="#16A34A"/>
+    <path d="M20 -95 Q5 -115 30 -125 Q55 -115 40 -95" fill="#22C55E"/>
+    <path d="M-20 -100 Q-35 -120 -10 -130 Q15 -120 0 -100" fill="#15803D"/>
+
+    <!-- Fried Brown Onions (Birista) -->
+    <path d="M-90 -60 Q-80 -70 -70 -62" stroke="#451A03" stroke-width="4" stroke-linecap="round" fill="none"/>
+    <path d="M-30 -50 Q-20 -60 -10 -52" stroke="#451A03" stroke-width="4" stroke-linecap="round" fill="none"/>
+    <path d="M40 -55 Q50 -65 60 -58" stroke="#451A03" stroke-width="4" stroke-linecap="round" fill="none"/>
+    <path d="M100 -65 Q110 -75 120 -68" stroke="#451A03" stroke-width="4" stroke-linecap="round" fill="none"/>
+  </g>
+</svg>

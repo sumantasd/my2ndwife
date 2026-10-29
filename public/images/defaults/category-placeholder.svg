@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="100%" height="100%">
+  <rect width="200" height="200" rx="28" fill="#FFF3F8" />
+  <circle cx="100" cy="90" r="50" fill="#FF006B" fill-opacity="0.12" />
+  <text x="100" y="102" font-size="44" text-anchor="middle" dominant-baseline="middle">🍽️</text>
+  <text x="100" y="160" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="14" font-weight="700" fill="#FF006B" text-anchor="middle">Our Menu</text>
+</svg>

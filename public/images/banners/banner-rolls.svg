@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300" width="100%" height="100%">
+  <defs>
+    <filter id="rShadow" x="-10%" y="-10%" width="125%" height="125%">
+      <feDropShadow dx="0" dy="8" stdDeviation="10" flood-color="#000000" flood-opacity="0.18" />
+    </filter>
+  </defs>
+  <g filter="url(#rShadow)">
+    <!-- Wooden Board Base -->
+    <rect x="30" y="160" width="340" height="90" rx="18" fill="#78350F" stroke="#92400E" stroke-width="3" />
+    <rect x="35" y="165" width="330" height="75" rx="14" fill="#92400E" />
+
+    <!-- Kolkata Kathi Roll 1 (Golden flaky paratha) -->
+    <g transform="translate(70, 75) rotate(20)">
+      <!-- Silver Foil -->
+      <rect x="25" y="80" width="48" height="75" rx="6" fill="#CBD5E1" stroke="#94A3B8" stroke-width="2" />
+      <!-- Paratha -->
+      <rect x="28" y="25" width="42" height="60" rx="20" fill="#FDE68A" stroke="#D97706" stroke-width="2.5" />
+      <circle cx="42" cy="45" r="4" fill="#92400E" opacity="0.6" />
+      <circle cx="55" cy="58" r="4.5" fill="#92400E" opacity="0.6" />
+      <!-- Filling -->
+      <circle cx="44" cy="22" r="7" fill="#991B1B" />
+      <circle cx="56" cy="20" r="6" fill="#78350F" />
+      <path d="M 40 18 Q 48 25 58 18" stroke="#EC4899" stroke-width="2.5" fill="none" />
+      <ellipse cx="50" cy="26" rx="5" ry="2.5" fill="#22C55E" />
+    </g>
+
+    <!-- Kolkata Kathi Roll 2 -->
+    <g transform="translate(145, 65) rotate(30)">
+      <rect x="25" y="80" width="46" height="70" rx="6" fill="#E2E8F0" stroke="#94A3B8" stroke-width="2" />
+      <rect x="28" y="25" width="40" height="60" rx="18" fill="#FEF08A" stroke="#D97706" stroke-width="2.5" />
+      <circle cx="44" cy="22" r="6" fill="#991B1B" />
+      <ellipse cx="50" cy="25" rx="4" ry="2" fill="#22C55E" />
+    </g>
+
+    <!-- Refreshing Iced Cola / Beverage Glass on the Right -->
+    <g transform="translate(260, 60)">
+      <path d="M 20 40 L 30 160 Q 55 166 80 160 L 90 40 Z" fill="#1C1917" stroke="#44403C" stroke-width="2.5" />
+      <!-- Liquid & Bubbles -->
+      <path d="M 22 65 L 30 158 Q 55 164 80 158 L 88 65 Z" fill="#7C2D12" opacity="0.9" />
+      <circle cx="50" cy="80" r="3" fill="#FFFFFF" opacity="0.6" />
+      <circle cx="65" cy="95" r="2.5" fill="#FFFFFF" opacity="0.6" />
+      <circle cx="42" cy="115" r="2" fill="#FFFFFF" opacity="0.5" />
+      <circle cx="58" cy="130" r="2.5" fill="#FFFFFF" opacity="0.5" />
+      <!-- Straw -->
+      <line x1="75" y1="10" x2="48" y2="150" stroke="#EF4444" stroke-width="5" stroke-linecap="round" />
+      <!-- Lemon slice -->
+      <circle cx="25" cy="40" r="14" fill="#FACC15" stroke="#CA8A04" stroke-width="2" />
+    </g>
+  </g>
+</svg>

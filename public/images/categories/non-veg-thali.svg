@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="100%" height="100%">
+  <defs>
+    <radialGradient id="brassPlatter" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#FEF08A" />
+      <stop offset="85%" stop-color="#EAB308" />
+      <stop offset="100%" stop-color="#CA8A04" />
+    </radialGradient>
+    <filter id="nvThaliShadow" x="-10%" y="-10%" width="125%" height="125%">
+      <feDropShadow dx="0" dy="5" stdDeviation="6" flood-color="#000000" flood-opacity="0.18" />
+    </filter>
+  </defs>
+  <g filter="url(#nvThaliShadow)">
+    <!-- Brass / Bronze Platter -->
+    <circle cx="100" cy="100" r="90" fill="url(#brassPlatter)" stroke="#A16207" stroke-width="4" />
+    <circle cx="100" cy="100" r="82" fill="#FEF9C3" stroke="#CA8A04" stroke-width="2" />
+
+    <!-- Fragrant Saffron Rice (Center) -->
+    <circle cx="100" cy="100" r="30" fill="#FEF08A" stroke="#FBBF24" stroke-width="1.5" />
+    <circle cx="100" cy="98" r="3" fill="#D97706" />
+    <ellipse cx="100" cy="100" rx="3" ry="1.5" fill="#15803D" />
+
+    <!-- Chicken Curry / Kosha (Top) -->
+    <circle cx="100" cy="40" r="23" fill="#CA8A04" stroke="#854D0E" stroke-width="1.5" />
+    <circle cx="100" cy="40" r="20" fill="#991B1B" />
+    <!-- Chicken piece -->
+    <ellipse cx="98" cy="38" rx="8" ry="6" fill="#78350F" />
+    <circle cx="104" cy="42" r="5" fill="#B45309" />
+
+    <!-- Dal Bowl (Top Right) -->
+    <circle cx="145" cy="65" r="21" fill="#CA8A04" stroke="#854D0E" stroke-width="1.5" />
+    <circle cx="145" cy="65" r="18" fill="#F59E0B" />
+    <path d="M 141 63 Q 145 60 149 63" stroke="#DC2626" stroke-width="2" fill="none" />
+
+    <!-- Crispy Fish Fry / Egg Curry (Bottom Right) -->
+    <circle cx="145" cy="135" r="21" fill="#CA8A04" stroke="#854D0E" stroke-width="1.5" />
+    <circle cx="145" cy="135" r="18" fill="#B45309" />
+    <ellipse cx="145" cy="135" rx="9" ry="6" fill="#FBBF24" stroke="#D97706" stroke-width="1" />
+
+    <!-- Flaky Paratha (Left) -->
+    <circle cx="55" cy="95" r="25" fill="#FDE68A" stroke="#B45309" stroke-width="1.5" />
+    <path d="M 40 85 Q 55 95 70 85" stroke="#B45309" stroke-width="1.5" fill="none" opacity="0.4" />
+    <path d="M 42 105 Q 55 95 68 105" stroke="#B45309" stroke-width="1.5" fill="none" opacity="0.4" />
+
+    <!-- Onion Rings & Lemon (Bottom Left) -->
+    <circle cx="65" cy="145" r="17" fill="#FFFFFF" stroke="#CA8A04" stroke-width="1.5" />
+    <circle cx="62" cy="143" r="5" stroke="#EC4899" stroke-width="2" fill="none" />
+    <circle cx="67" cy="147" r="4.5" fill="#FACC15" />
+  </g>
+</svg>
