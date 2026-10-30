@@ -111,6 +111,22 @@
                     <span>Customers</span>
                 </a>
 
+                <a href="{{ route('admin.account-deletions.index') }}"
+                   class="flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-semibold transition-all {{ request()->routeIs('admin.account-deletions.*') ? 'bg-[#F50070] text-white shadow-lg shadow-pink-500/20' : 'text-gray-300 hover:bg-gray-800 hover:text-white' }}">
+                    <div class="flex items-center gap-3">
+                        <i data-lucide="user-x" class="w-4 h-4"></i>
+                        <span>Account Deletions</span>
+                    </div>
+                    @php
+                        $pendingDeletionCount = \App\Models\AccountDeletionRequest::whereIn('status', ['pending', 'under_review'])->count();
+                    @endphp
+                    @if($pendingDeletionCount > 0)
+                        <span class="inline-flex items-center justify-center px-2 py-0.5 text-[10px] font-extrabold leading-none text-white bg-amber-500 rounded-full">
+                            {{ $pendingDeletionCount }}
+                        </span>
+                    @endif
+                </a>
+
                 <a href="{{ route('admin.coupons.index') }}" 
                    class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all {{ request()->routeIs('admin.coupons.*') ? 'bg-[#F50070] text-white' : 'text-gray-300 hover:bg-gray-800 hover:text-white' }}">
                     <i data-lucide="tag" class="w-4 h-4"></i>

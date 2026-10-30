@@ -1,5 +1,7 @@
 <?php
 
+use App\Http\Controllers\AccountDeletionController;
+use App\Http\Controllers\Admin\AdminAccountDeletionController;
 use App\Http\Controllers\Admin\AdminAddonController;
 use App\Http\Controllers\Admin\AdminCategoryController;
 use App\Http\Controllers\Admin\AdminCouponController;
@@ -55,6 +57,11 @@ Route::get('/privacy', [PageController::class, 'privacy'])->name('page.privacy')
 Route::get('/refund-policy', [PageController::class, 'refund'])->name('page.refund');
 Route::get('/faq', [PageController::class, 'faq'])->name('page.faq');
 Route::get('/contact', [PageController::class, 'contact'])->name('page.contact');
+
+// Google Play Data Safety Account Deletion Page
+Route::get('/page/play-store-app-delete', [AccountDeletionController::class, 'show'])->name('account-deletion.show');
+Route::post('/page/play-store-app-delete', [AccountDeletionController::class, 'store'])->middleware('throttle:10,1')->name('account-deletion.store');
+
 Route::get('/page/{slug}', [PageController::class, 'show'])->name('page.show');
 
 // Newsletter Subscription
@@ -157,6 +164,16 @@ Route::middleware(['auth', 'role:super_admin,admin,order_manager,kitchen_staff,d
         Route::get('customers', [AdminCustomerController::class, 'index'])->name('customers.index');
         Route::get('customers/{customer}', [AdminCustomerController::class, 'show'])->name('customers.show');
         Route::post('customers/{customer}/toggle-status', [AdminCustomerController::class, 'toggleStatus'])->name('customers.toggle');
+
+        // Account Deletion Requests (Google Play Compliance - Admin & Super Admin Only)
+        Route::middleware('role:super_admin,admin')->group(function () {
+            Route::get('account-deletions', [AdminAccountDeletionController::class, 'index'])->name('account-deletions.index');
+            Route::get('account-deletions/{accountDeletion}', [AdminAccountDeletionController::class, 'show'])->name('account-deletions.show');
+            Route::post('account-deletions/{accountDeletion}/update-status', [AdminAccountDeletionController::class, 'updateStatus'])->name('account-deletions.update-status');
+            Route::post('account-deletions/{accountDeletion}/verify', [AdminAccountDeletionController::class, 'verifyIdentity'])->name('account-deletions.verify');
+            Route::post('account-deletions/{accountDeletion}/clear-verification', [AdminAccountDeletionController::class, 'clearVerification'])->name('account-deletions.clear-verification');
+            Route::post('account-deletions/{accountDeletion}/process', [AdminAccountDeletionController::class, 'processDeletion'])->name('account-deletions.process');
+        });
 
         // Coupons
         Route::resource('coupons', AdminCouponController::class);

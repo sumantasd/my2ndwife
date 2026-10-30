@@ -507,11 +507,24 @@
                                 Cancel
                             </button>
                             <button type="submit" 
-                                    class="px-7 py-3 rounded-full bg-[#FF006B] hover:bg-[#E0005E] text-white font-bold text-xs shadow-md shadow-pink-500/20 transition-all cursor-pointer">
+                                     class="px-7 py-3 rounded-full bg-[#FF006B] hover:bg-[#E0005E] text-white font-bold text-xs shadow-md shadow-pink-500/20 transition-all cursor-pointer">
                                 Save Profile Changes
                             </button>
                         </div>
                     </form>
+
+                    <!-- Account Deletion & Privacy Option -->
+                    <div class="mt-6 p-4 rounded-2xl bg-gray-50 border border-gray-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+                        <div>
+                            <span class="font-bold text-gray-700 block">Delete Account & Personal Data</span>
+                            <span class="text-gray-500 text-[11px]">Request account deletion and personal data anonymization in compliance with Google Play data safety requirements.</span>
+                        </div>
+                        <a href="{{ route('account-deletion.show') }}"
+                           class="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-white hover:bg-rose-50 text-rose-600 hover:text-rose-700 border border-rose-200 font-bold text-xs transition-colors shrink-0">
+                            <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                            <span>Request Deletion</span>
+                        </a>
+                    </div>
                 </div>
             </div>
 

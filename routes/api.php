@@ -37,8 +37,10 @@ Route::prefix('v1')->group(function () {
     });
 
     // Authenticated Mobile Customer Endpoints
-    Route::middleware('auth:sanctum')->group(function () {
+    Route::middleware(['auth:sanctum', 'throttle:30,1'])->group(function () {
         Route::get('/my-orders', [ApiOrderController::class, 'myOrders']);
+        Route::post('/account/delete-request', [\App\Http\Controllers\Api\v1\ApiAccountDeletionController::class, 'submit']);
+        Route::get('/account/delete-request', [\App\Http\Controllers\Api\v1\ApiAccountDeletionController::class, 'status']);
     });
 
     // Device Token Management (FCM Push Notifications for Android / iOS)
@@ -62,4 +64,6 @@ Route::middleware(['auth:sanctum', 'throttle:60,1'])->group(function () {
     Route::post('/device/register', [\App\Http\Controllers\Api\v1\ApiDeviceTokenController::class, 'register']);
     Route::post('/device-token', [\App\Http\Controllers\Api\v1\ApiDeviceTokenController::class, 'register']);
     Route::post('/device-tokens', [\App\Http\Controllers\Api\v1\ApiDeviceTokenController::class, 'register']);
+    Route::post('/account/delete-request', [\App\Http\Controllers\Api\v1\ApiAccountDeletionController::class, 'submit']);
+    Route::get('/account/delete-request', [\App\Http\Controllers\Api\v1\ApiAccountDeletionController::class, 'status']);
 });

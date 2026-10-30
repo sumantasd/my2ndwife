@@ -31,6 +31,12 @@ class ApiSettingsController extends Controller
                 'packaging_charge' => (float) ($settings['packaging_charge'] ?? 25.00),
                 'tax_rate' => (float) ($settings['tax_rate_percentage'] ?? 5.00),
             ],
+            'legal_links' => [
+                'privacy_policy' => url('/privacy'),
+                'terms' => url('/terms'),
+                'refund_policy' => url('/refund-policy'),
+                'account_deletion' => url('/page/play-store-app-delete'),
+            ],
             'banners' => $banners,
         ]);
     }

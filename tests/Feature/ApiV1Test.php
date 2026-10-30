@@ -112,4 +112,19 @@ class ApiV1Test extends TestCase
             ->assertJsonPath('order.order_number', 'M2W-API001')
             ->assertJsonPath('order.status', Order::STATUS_PREPARING);
     }
+
+    public function test_api_settings_returns_legal_and_account_deletion_links(): void
+    {
+        $response = $this->getJson('/api/v1/settings');
+        $response->assertStatus(200)
+            ->assertJsonPath('success', true)
+            ->assertJsonStructure([
+                'legal_links' => [
+                    'privacy_policy',
+                    'terms',
+                    'refund_policy',
+                    'account_deletion',
+                ],
+            ]);
+    }
 }
