@@ -72,6 +72,9 @@ class OrderService
         }
 
         $couponCode = $input['coupon_code'] ?? null;
+        if (!$user && !empty($input['customer_phone'])) {
+            $user = User::findByPhone($input['customer_phone']);
+        }
         $userId = $user?->id;
 
         // 3. Fetch fresh cart calculations (server-side only)

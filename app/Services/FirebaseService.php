@@ -15,7 +15,8 @@ use Illuminate\Support\Facades\Log;
 
 class FirebaseService
 {
-    protected const TOKEN_CACHE_KEY = 'firebase_fcm_access_token';
+    public const TOKEN_CACHE_KEY = 'firebase_fcm_access_token';
+    public const OAUTH_STATUS_CACHE_KEY = 'firebase_oauth_validation_status';
     protected const OAUTH_URL = 'https://oauth2.googleapis.com/token';
 
     /**
@@ -126,69 +127,153 @@ class FirebaseService
     ];
 
     /**
-     * Get Firebase configuration from DB or env fallback
+     * Get Firebase configuration from DB, service-account.json file, or env fallback.
      */
     public function getCredentials(): array
     {
         $settings = RestaurantSetting::getAll();
 
-        $projectId = $settings['firebase_project_id'] ?? config('services.firebase.project_id') ?: env('FIREBASE_PROJECT_ID');
-        $clientEmail = $settings['firebase_client_email'] ?? config('services.firebase.client_email') ?: env('FIREBASE_CLIENT_EMAIL');
-        $privateKey = $settings['firebase_private_key'] ?? config('services.firebase.private_key') ?: env('FIREBASE_PRIVATE_KEY');
-        $isEnabled = (bool) ($settings['firebase_notifications_enabled'] ?? false);
-
-        // Check if service account JSON file exists on server
-        $filePath = storage_path('app/firebase/service-account.json');
+        $filePath = config('services.firebase.credentials_path', storage_path('app/firebase/service-account.json'));
+        $jsonCreds = [];
         if (File::exists($filePath)) {
             try {
-                $json = json_decode(File::get($filePath), true);
-                if (is_array($json)) {
-                    $projectId = $projectId ?: ($json['project_id'] ?? null);
-                    $clientEmail = $clientEmail ?: ($json['client_email'] ?? null);
-                    $privateKey = $privateKey ?: ($json['private_key'] ?? null);
+                $raw = File::get($filePath);
+                $decoded = json_decode($raw, true);
+                if (is_array($decoded)) {
+                    $jsonCreds = $decoded;
                 }
             } catch (Exception $e) {
                 Log::warning('FirebaseService: Failed reading service-account.json: ' . $e->getMessage());
             }
         }
 
-        // Normalize private key line breaks
+        // Database settings have precedence if non-empty, then file credentials, then config/env
+        $projectId = !empty($settings['firebase_project_id'])
+            ? trim((string) $settings['firebase_project_id'])
+            : (!empty($jsonCreds['project_id']) ? trim((string) $jsonCreds['project_id']) : (config('services.firebase.project_id') ?: env('FIREBASE_PROJECT_ID')));
+
+        $clientEmail = !empty($settings['firebase_client_email'])
+            ? trim((string) $settings['firebase_client_email'])
+            : (!empty($jsonCreds['client_email']) ? trim((string) $jsonCreds['client_email']) : (config('services.firebase.client_email') ?: env('FIREBASE_CLIENT_EMAIL')));
+
+        $privateKey = !empty($settings['firebase_private_key'])
+            ? (string) $settings['firebase_private_key']
+            : (!empty($jsonCreds['private_key']) ? (string) $jsonCreds['private_key'] : (config('services.firebase.private_key') ?: env('FIREBASE_PRIVATE_KEY')));
+
+        $isEnabled = !empty($settings['firebase_notifications_enabled']);
+
         if ($privateKey) {
-            $privateKey = str_replace('\\n', "\n", $privateKey);
+            $privateKey = $this->normalizePrivateKey($privateKey);
         }
 
         return [
             'enabled' => $isEnabled,
-            'project_id' => $projectId,
-            'client_email' => $clientEmail,
-            'private_key' => $privateKey,
+            'project_id' => $projectId ? trim((string) $projectId) : null,
+            'client_email' => $clientEmail ? trim((string) $clientEmail) : null,
+            'private_key' => $privateKey ?: null,
         ];
     }
 
     /**
-     * Inspect Firebase configuration status
+     * Normalize private key string (handling escaped \n, \r\n, and whitespace)
      */
-    public function getConfigurationStatus(): array
+    public function normalizePrivateKey(string $key): string
+    {
+        $key = trim($key);
+        // Replace escaped line breaks (from JSON strings or .env)
+        $key = str_replace(['\\r\\n', '\\n', '\\r'], "\n", $key);
+        $key = str_replace(["\r\n", "\r"], "\n", $key);
+        return trim($key);
+    }
+
+    /**
+     * Validate whether a string is a valid RSA private key in PEM format parseable by OpenSSL.
+     */
+    public function validatePrivateKeyFormat(?string $key): bool
+    {
+        if (empty($key)) {
+            return false;
+        }
+
+        $normalized = $this->normalizePrivateKey($key);
+        if (!str_contains($normalized, '-----BEGIN PRIVATE KEY-----') && !str_contains($normalized, '-----BEGIN RSA PRIVATE KEY-----')) {
+            return false;
+        }
+
+        $res = openssl_pkey_get_private($normalized);
+        return $res !== false;
+    }
+
+    /**
+     * Inspect Firebase configuration status with actual cryptographic and credential validation.
+     * Ready status strictly requires valid configuration, not merely database or file existence.
+     */
+    public function getConfigurationStatus(bool $verifyRemote = false): array
     {
         $creds = $this->getCredentials();
-        $isConfigured = !empty($creds['project_id']) && !empty($creds['client_email']) && !empty($creds['private_key']);
-
-        $filePath = storage_path('app/firebase/service-account.json');
+        $filePath = config('services.firebase.credentials_path', storage_path('app/firebase/service-account.json'));
         $fileLoaded = File::exists($filePath);
 
+        $hasProjectId = !empty($creds['project_id']);
+        $hasClientEmail = !empty($creds['client_email']);
+        $hasPrivateKey = !empty($creds['private_key']);
+        $isConfigured = $hasProjectId && $hasClientEmail && $hasPrivateKey;
+
+        $isValidKey = $hasPrivateKey && $this->validatePrivateKeyFormat($creds['private_key']);
+
         $statusText = 'Not Configured';
-        if ($isConfigured) {
-            $statusText = $creds['enabled'] ? 'Active & Ready' : 'Configured (Disabled)';
+        $statusSeverity = 'gray'; // 'green', 'amber', 'red', 'gray'
+
+        if (!$isConfigured) {
+            $missing = [];
+            if (!$hasProjectId) $missing[] = 'Project ID';
+            if (!$hasClientEmail) $missing[] = 'Client Email';
+            if (!$hasPrivateKey) $missing[] = 'Private Key';
+            $statusText = 'Missing ' . implode(', ', $missing);
+            $statusSeverity = 'gray';
+        } elseif (!$isValidKey) {
+            $statusText = 'Invalid Private Key Format';
+            $statusSeverity = 'red';
+        } elseif (!$creds['enabled']) {
+            $statusText = 'Configured (Disabled)';
+            $statusSeverity = 'amber';
+        } else {
+            // Check cached OAuth validation status if available
+            $cachedStatus = Cache::get(self::OAUTH_STATUS_CACHE_KEY);
+            if ($cachedStatus === 'valid') {
+                $statusText = 'Active & Ready';
+                $statusSeverity = 'green';
+            } elseif ($cachedStatus === 'failed') {
+                $statusText = 'Authentication Error';
+                $statusSeverity = 'red';
+            } else {
+                if ($verifyRemote) {
+                    $testRes = $this->validateCredentials($creds);
+                    if ($testRes['success']) {
+                        $statusText = 'Active & Ready';
+                        $statusSeverity = 'green';
+                    } else {
+                        $statusText = 'Authentication Error';
+                        $statusSeverity = 'red';
+                    }
+                } else {
+                    // Valid key syntax and enabled
+                    $statusText = 'Active & Ready';
+                    $statusSeverity = 'green';
+                }
+            }
         }
 
         return [
             'enabled' => $creds['enabled'],
             'configured' => $isConfigured,
+            'valid_key' => $isValidKey,
             'file_loaded' => $fileLoaded,
             'project_id' => $creds['project_id'],
             'client_email' => $creds['client_email'],
-            'has_private_key' => !empty($creds['private_key']),
+            'has_private_key' => $hasPrivateKey,
             'status_label' => $statusText,
+            'status_severity' => $statusSeverity,
         ];
     }
 
@@ -210,7 +295,7 @@ class FirebaseService
 
         $enabledEvents = RestaurantSetting::get($settingKey, null);
 
-        // If not set yet, enable all by default
+        // If setting is null (uninitialized), all default events are active
         if ($enabledEvents === null) {
             return true;
         }
@@ -223,7 +308,7 @@ class FirebaseService
     }
 
     /**
-     * Validate credentials by requesting an OAuth2 token from Google
+     * Validate credentials by testing RSA key syntax and exchanging OAuth2 token with Google
      */
     public function validateCredentials(?array $customCreds = null): array
     {
@@ -239,17 +324,28 @@ class FirebaseService
             return ['success' => false, 'error' => 'Firebase Private Key is required.'];
         }
 
+        if (!$this->validatePrivateKeyFormat($creds['private_key'])) {
+            Cache::put(self::OAUTH_STATUS_CACHE_KEY, 'failed', 3600);
+            return [
+                'success' => false,
+                'error' => 'Invalid RSA private key format. OpenSSL could not parse the private key PEM structure.',
+            ];
+        }
+
         try {
             $token = $this->generateAccessToken($creds);
             if ($token) {
+                Cache::put(self::OAUTH_STATUS_CACHE_KEY, 'valid', 3600);
                 return [
                     'success' => true,
-                    'message' => "Successfully connected to Google OAuth2 and validated Project ID: {$creds['project_id']}.",
+                    'message' => "Successfully connected to Google OAuth2 and validated Project ID: '{$creds['project_id']}'.",
                 ];
             }
+            Cache::put(self::OAUTH_STATUS_CACHE_KEY, 'failed', 3600);
             return ['success' => false, 'error' => 'Unable to obtain Google OAuth2 access token.'];
         } catch (Exception $e) {
-            return ['success' => false, 'error' => $e->getMessage()];
+            Cache::put(self::OAUTH_STATUS_CACHE_KEY, 'failed', 3600);
+            return ['success' => false, 'error' => $this->sanitizeErrorMessage($e->getMessage())];
         }
     }
 
@@ -274,7 +370,7 @@ class FirebaseService
     protected function generateAccessToken(array $creds): string
     {
         $clientEmail = $creds['client_email'];
-        $privateKey = $creds['private_key'];
+        $privateKey = $this->normalizePrivateKey($creds['private_key']);
 
         $now = time();
         $header = json_encode(['alg' => 'RS256', 'typ' => 'JWT']);
@@ -282,7 +378,7 @@ class FirebaseService
             'iss' => $clientEmail,
             'scope' => 'https://www.googleapis.com/auth/firebase.messaging',
             'aud' => self::OAUTH_URL,
-            'iat' => $now,
+            'iat' => $now - 30, // 30s leeway against server clock skew
             'exp' => $now + 3600,
         ]);
 
@@ -304,14 +400,15 @@ class FirebaseService
         $base64Signature = rtrim(strtr(base64_encode($signature), '+/', '-_'), '=');
         $assertion = "{$payload}.{$base64Signature}";
 
-        $response = Http::asForm()->timeout(10)->post(self::OAUTH_URL, [
+        $response = Http::asForm()->timeout(12)->post(self::OAUTH_URL, [
             'grant_type' => 'urn:ietf:params:oauth:grant-type:jwt-bearer',
             'assertion' => $assertion,
         ]);
 
         if (!$response->successful()) {
             $err = $response->json('error_description') ?: $response->json('error') ?: $response->body();
-            throw new Exception("Google OAuth2 token exchange rejected: {$err}");
+            $sanitized = $this->sanitizeErrorMessage("Google OAuth2 token exchange rejected: {$err}");
+            throw new Exception($sanitized);
         }
 
         $token = $response->json('access_token');
@@ -323,7 +420,8 @@ class FirebaseService
     }
 
     /**
-     * Dispatch push notification to a specific FCM device token
+     * Dispatch push notification to a specific FCM device token using FCM HTTP v1.
+     * Records structured diagnostics, classifies errors, and never exposes secrets.
      */
     public function sendToToken(
         string $token,
@@ -334,6 +432,7 @@ class FirebaseService
         ?int $userId = null,
         string $eventType = 'custom'
     ): array {
+        $token = trim($token);
         $creds = $this->getCredentials();
 
         // Ensure string values in FCM data payload
@@ -342,6 +441,10 @@ class FirebaseService
             $formattedData[(string) $k] = is_scalar($v) ? (string) $v : json_encode($v);
         }
         $formattedData['event_type'] = $eventType;
+        $formattedData['title'] = $title;
+        $formattedData['body'] = $body;
+        $formattedData['message'] = $body;
+        $formattedData['click_action'] = 'FLUTTER_NOTIFICATION_CLICK';
 
         $log = NotificationLog::create([
             'user_id' => $userId,
@@ -355,36 +458,58 @@ class FirebaseService
         ]);
 
         if (!$creds['enabled']) {
+            $msg = 'Firebase Push Notifications are globally disabled in Admin Settings.';
             $log->update([
                 'status' => NotificationLog::STATUS_FAILED,
-                'error_message' => 'Firebase Push Notifications are globally disabled in Admin Settings.',
+                'error_message' => $msg,
             ]);
             return [
                 'success' => false,
                 'log_id' => $log->id,
-                'error' => 'Firebase notifications are disabled.',
+                'error_code' => 'NOTIFICATIONS_DISABLED',
+                'http_status' => null,
+                'error' => $msg,
             ];
         }
 
         if (empty($creds['project_id']) || empty($creds['client_email']) || empty($creds['private_key'])) {
+            $msg = 'Firebase credentials are incomplete on the server. Please check Project ID, Client Email, and Private Key in Settings.';
             $log->update([
                 'status' => NotificationLog::STATUS_FAILED,
-                'error_message' => 'Firebase credentials are incomplete or missing on the server.',
+                'error_message' => $msg,
             ]);
             return [
                 'success' => false,
                 'log_id' => $log->id,
-                'error' => 'Incomplete Firebase credentials.',
+                'error_code' => 'CREDENTIALS_INCOMPLETE',
+                'http_status' => null,
+                'error' => $msg,
+            ];
+        }
+
+        if (!$this->validatePrivateKeyFormat($creds['private_key'])) {
+            $msg = 'Firebase private key format is invalid. OpenSSL cannot parse the RSA private key.';
+            $log->update([
+                'status' => NotificationLog::STATUS_FAILED,
+                'error_message' => $msg,
+            ]);
+            return [
+                'success' => false,
+                'log_id' => $log->id,
+                'error_code' => 'INVALID_PRIVATE_KEY',
+                'http_status' => null,
+                'error' => $msg,
             ];
         }
 
         try {
             $accessToken = $this->getAccessToken();
             if (!$accessToken) {
-                throw new Exception('Failed to obtain FCM access token.');
+                throw new Exception('Failed to obtain Google OAuth2 FCM access token.');
             }
 
             $endpoint = "https://fcm.googleapis.com/v1/projects/{$creds['project_id']}/messages:send";
+            $channelId = RestaurantSetting::get('firebase_channel_id', 'm2w_orders');
 
             $fcmPayload = [
                 'message' => [
@@ -397,17 +522,36 @@ class FirebaseService
                     'android' => [
                         'priority' => 'high',
                         'notification' => [
+                            'title' => $title,
+                            'body' => $body,
                             'sound' => 'default',
-                            'channel_id' => 'm2w_orders',
+                            'channel_id' => $channelId,
                             'default_vibrate_timings' => true,
                             'default_light_settings' => true,
+                            'notification_priority' => 'PRIORITY_HIGH',
+                            'visibility' => 'PUBLIC',
+                        ],
+                    ],
+                    'apns' => [
+                        'headers' => [
+                            'apns-priority' => '10',
+                        ],
+                        'payload' => [
+                            'aps' => [
+                                'alert' => [
+                                    'title' => $title,
+                                    'body' => $body,
+                                ],
+                                'sound' => 'default',
+                                'badge' => 1,
+                            ],
                         ],
                     ],
                 ],
             ];
 
             $response = Http::withToken($accessToken)
-                ->timeout(10)
+                ->timeout(12)
                 ->post($endpoint, $fcmPayload);
 
             if ($response->successful()) {
@@ -426,41 +570,62 @@ class FirebaseService
                     'success' => true,
                     'log_id' => $log->id,
                     'fcm_message_id' => $fcmMessageId,
+                    'http_status' => $response->status(),
                 ];
             }
 
             // Error response from FCM
+            $httpStatus = $response->status();
             $errorData = $response->json('error') ?? [];
             $errorCode = $errorData['status'] ?? 'UNKNOWN';
-            $errorMessage = $errorData['message'] ?? $response->body();
+            $rawErrorMessage = $errorData['message'] ?? $response->body();
 
-            // Handle invalid or expired tokens (UNREGISTERED, NOT_FOUND)
-            if (in_array($errorCode, ['UNREGISTERED', 'NOT_FOUND', 'INVALID_ARGUMENT']) || str_contains($errorMessage, 'Requested entity was not found')) {
+            // Construct safe, actionable diagnostic message
+            $actionableDiagnostic = match ($errorCode) {
+                'UNAUTHENTICATED' => "HTTP {$httpStatus} [UNAUTHENTICATED]: Google rejected the Service Account OAuth2 credentials. Verify Client Email and Private Key in Firebase settings.",
+                'PERMISSION_DENIED' => "HTTP {$httpStatus} [PERMISSION_DENIED]: Firebase Cloud Messaging API is disabled for project '{$creds['project_id']}' or the Service Account lacks 'Firebase Cloud Messaging API Admin' role in Google Cloud IAM.",
+                'NOT_FOUND', 'UNREGISTERED' => "HTTP {$httpStatus} [UNREGISTERED]: The device token is no longer registered or has expired. Device marked inactive.",
+                'SENDER_ID_MISMATCH' => "HTTP {$httpStatus} [SENDER_ID_MISMATCH]: The device token was registered for a different Firebase Project than '{$creds['project_id']}'. Verify the google-services.json file in your Android app.",
+                'INVALID_ARGUMENT' => "HTTP {$httpStatus} [INVALID_ARGUMENT]: Malformed device token or invalid payload structure: " . $this->sanitizeErrorMessage($rawErrorMessage),
+                'QUOTA_EXCEEDED' => "HTTP {$httpStatus} [QUOTA_EXCEEDED]: Firebase Cloud Messaging message rate limit exceeded.",
+                'UNAVAILABLE' => "HTTP {$httpStatus} [UNAVAILABLE]: Firebase Cloud Messaging servers are temporarily unavailable.",
+                default => "HTTP {$httpStatus} [{$errorCode}]: " . $this->sanitizeErrorMessage($rawErrorMessage),
+            };
+
+            // Automatically deactivate invalid or expired tokens
+            if (in_array($errorCode, ['UNREGISTERED', 'NOT_FOUND', 'SENDER_ID_MISMATCH']) || str_contains($rawErrorMessage, 'Requested entity was not found')) {
                 DeviceToken::where('token', $token)->update(['is_active' => false]);
-                Log::info("FirebaseService: Deactivated invalid FCM device token: " . substr($token, 0, 15) . "...");
+                Log::info("FirebaseService: Deactivated invalid FCM device token: " . substr($token, 0, 16) . "...");
             }
 
             $log->update([
                 'status' => NotificationLog::STATUS_FAILED,
-                'error_message' => "FCM [{$errorCode}]: {$errorMessage}",
+                'error_message' => $actionableDiagnostic,
             ]);
 
             return [
                 'success' => false,
                 'log_id' => $log->id,
-                'error' => $errorMessage,
+                'http_status' => $httpStatus,
+                'error_code' => $errorCode,
+                'error' => $actionableDiagnostic,
             ];
 
         } catch (Exception $e) {
+            $sanitizedError = $this->sanitizeErrorMessage($e->getMessage());
+            $errorDiagnostic = "Dispatch Exception: {$sanitizedError}";
+
             $log->update([
                 'status' => NotificationLog::STATUS_FAILED,
-                'error_message' => $e->getMessage(),
+                'error_message' => $errorDiagnostic,
             ]);
 
             return [
                 'success' => false,
                 'log_id' => $log->id,
-                'error' => $e->getMessage(),
+                'http_status' => 500,
+                'error_code' => 'EXCEPTION',
+                'error' => $errorDiagnostic,
             ];
         }
     }
@@ -594,5 +759,15 @@ class FirebaseService
             'title' => $title,
             'body' => $body,
         ];
+    }
+
+    /**
+     * Sanitize error message to ensure no private keys or tokens leak into logs or UI
+     */
+    public function sanitizeErrorMessage(string $msg): string
+    {
+        $msg = preg_replace('/-----BEGIN[A-Z\s]+-----[\s\S]+?-----END[A-Z\s]+-----/', '[REDACTED_PRIVATE_KEY]', $msg);
+        $msg = preg_replace('/ya29\.[a-zA-Z0-9_\-]+/', '[REDACTED_OAUTH_TOKEN]', $msg);
+        return trim($msg);
     }
 }

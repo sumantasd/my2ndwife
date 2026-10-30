@@ -185,6 +185,7 @@ Route::middleware(['auth', 'role:super_admin,admin,order_manager,kitchen_staff,d
         Route::get('settings/receipt/test', [AdminSettingsController::class, 'testReceipt'])->name('settings.receipt.test');
         Route::get('settings', [AdminSettingsController::class, 'index'])->name('settings.index');
         Route::post('settings', [AdminSettingsController::class, 'updateSettings'])->name('settings.update');
+        Route::post('settings/firebase/parse-json', [AdminSettingsController::class, 'parseServiceAccountJson'])->name('settings.firebase.parse');
         Route::post('settings/banners', [AdminSettingsController::class, 'storeBanner'])->name('banners.store');
         Route::put('settings/banners/{banner}', [AdminSettingsController::class, 'updateBanner'])->name('banners.update');
         Route::patch('settings/banners/{banner}/toggle', [AdminSettingsController::class, 'toggleBanner'])->name('banners.toggle');

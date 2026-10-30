@@ -402,4 +402,297 @@ class FirebaseNotificationTest extends TestCase
             'retry_count' => 1,
         ]);
     }
+
+    protected function generateValidTestRsaKey(): string
+    {
+        $conf = file_exists('C:/xampp/apache/conf/openssl.cnf') ? 'C:/xampp/apache/conf/openssl.cnf' : null;
+        $args = [
+            'private_key_bits' => 2048,
+            'private_key_type' => OPENSSL_KEYTYPE_RSA,
+        ];
+        if ($conf) {
+            $args['config'] = $conf;
+        }
+        $res = openssl_pkey_new($args);
+        $privKey = '';
+        if ($conf) {
+            openssl_pkey_export($res, $privKey, null, ['config' => $conf]);
+        } else {
+            openssl_pkey_export($res, $privKey);
+        }
+        return $privKey;
+    }
+
+    public function test_service_account_json_upload_populates_project_id_and_client_email(): void
+    {
+        $validRsaKey = $this->generateValidTestRsaKey();
+        $this->assertNotEmpty($validRsaKey);
+
+        $jsonPayload = [
+            'type' => 'service_account',
+            'project_id' => 'my-custom-firebase-project',
+            'private_key_id' => 'abcd1234efgh5678',
+            'private_key' => $validRsaKey,
+            'client_email' => 'firebase-adminsdk-live@my-custom-firebase-project.iam.gserviceaccount.com',
+            'client_id' => '10987654321',
+            'auth_uri' => 'https://accounts.google.com/o/oauth2/auth',
+            'token_uri' => 'https://oauth2.googleapis.com/token',
+        ];
+
+        $uploadedFile = \Illuminate\Http\UploadedFile::fake()->createWithContent(
+            'service-account.json',
+            json_encode($jsonPayload)
+        );
+
+        $response = $this->actingAs($this->admin)->post(route('admin.settings.update'), [
+            '_section' => 'notifications',
+            'firebase_notifications_enabled' => '1',
+            'firebase_project_id' => '', // Empty from form, must NOT overwrite parsed JSON
+            'firebase_client_email' => '', // Empty from form, must NOT overwrite parsed JSON
+            'firebase_service_account_file' => $uploadedFile,
+        ]);
+
+        $response->assertRedirect();
+
+        // Database settings must be populated from the uploaded file
+        $this->assertEquals('my-custom-firebase-project', RestaurantSetting::get('firebase_project_id'));
+        $this->assertEquals('firebase-adminsdk-live@my-custom-firebase-project.iam.gserviceaccount.com', RestaurantSetting::get('firebase_client_email'));
+        $this->assertTrue(RestaurantSetting::get('firebase_notifications_enabled'));
+
+        // Settings page should render these values without exposing the private key
+        $pageResponse = $this->actingAs($this->admin)->get(route('admin.settings.index'));
+        $pageResponse->assertStatus(200);
+        $pageResponse->assertSee('my-custom-firebase-project');
+        $pageResponse->assertSee('firebase-adminsdk-live@my-custom-firebase-project.iam.gserviceaccount.com');
+        $pageResponse->assertDontSee($validRsaKey); // Private key must remain masked
+    }
+
+    public function test_invalid_service_account_json_upload_preserves_existing_configuration(): void
+    {
+        // Setup initial existing configuration
+        RestaurantSetting::set('firebase_project_id', 'existing-stable-proj', 'notifications');
+        RestaurantSetting::set('firebase_client_email', 'existing@stable-proj.iam.gserviceaccount.com', 'notifications');
+        RestaurantSetting::set('firebase_private_key', 'existing_key_data', 'notifications');
+
+        // Upload an invalid JSON (missing private_key and client_email)
+        $invalidJson = json_encode([
+            'type' => 'service_account',
+            'project_id' => 'hacked-or-corrupt-project',
+        ]);
+
+        $invalidFile = \Illuminate\Http\UploadedFile::fake()->createWithContent(
+            'bad-service-account.json',
+            $invalidJson
+        );
+
+        $response = $this->actingAs($this->admin)->post(route('admin.settings.update'), [
+            '_section' => 'notifications',
+            'firebase_service_account_file' => $invalidFile,
+        ]);
+
+        $response->assertSessionHas('error');
+
+        // Verify existing configuration is completely preserved
+        $this->assertEquals('existing-stable-proj', RestaurantSetting::get('firebase_project_id'));
+        $this->assertEquals('existing@stable-proj.iam.gserviceaccount.com', RestaurantSetting::get('firebase_client_email'));
+        $this->assertEquals('existing_key_data', RestaurantSetting::get('firebase_private_key'));
+    }
+
+    public function test_ajax_service_account_json_parser_endpoint(): void
+    {
+        $validRsaKey = $this->generateValidTestRsaKey();
+
+        $jsonPayload = [
+            'type' => 'service_account',
+            'project_id' => 'ajax-parsed-proj',
+            'client_email' => 'ajax-service@ajax-parsed-proj.iam.gserviceaccount.com',
+            'private_key' => $validRsaKey,
+        ];
+
+        $file = \Illuminate\Http\UploadedFile::fake()->createWithContent('sa.json', json_encode($jsonPayload));
+
+        $response = $this->actingAs($this->admin)->postJson(route('admin.settings.firebase.parse'), [
+            'file' => $file,
+        ]);
+
+        $response->assertStatus(200);
+        $response->assertJson([
+            'success' => true,
+            'project_id' => 'ajax-parsed-proj',
+            'client_email' => 'ajax-service@ajax-parsed-proj.iam.gserviceaccount.com',
+            'has_private_key' => true,
+        ]);
+        $response->assertJsonMissing(['private_key' => $validRsaKey]);
+    }
+
+    public function test_device_token_route_aliases_do_not_return_404(): void
+    {
+        $routes = [
+            '/api/v1/devices/register',
+            '/api/devices/register',
+            '/api/v1/device/register',
+            '/api/device/register',
+            '/api/v1/device-token',
+            '/api/device-token',
+        ];
+
+        foreach ($routes as $url) {
+            $res = $this->actingAs($this->customer, 'sanctum')->postJson($url, [
+                'token' => 'token_for_' . md5($url),
+                'device_type' => 'android',
+            ]);
+            $this->assertNotEquals(404, $res->status(), "Route {$url} unexpectedly returned 404!");
+            $res->assertStatus(200);
+            $res->assertJson(['success' => true]);
+        }
+    }
+
+    public function test_device_token_field_aliases_fcm_token_and_device_token(): void
+    {
+        // 1. Using fcm_token field
+        $response1 = $this->actingAs($this->customer, 'sanctum')->postJson('/api/v1/devices/register', [
+            'fcm_token' => 'aliased_fcm_token_999',
+            'device_type' => 'Android',
+        ]);
+        $response1->assertStatus(200);
+        $this->assertDatabaseHas('device_tokens', [
+            'user_id' => $this->customer->id,
+            'token' => 'aliased_fcm_token_999',
+            'device_type' => 'android',
+        ]);
+
+        // 2. Using device_token field
+        $response2 = $this->actingAs($this->customer, 'sanctum')->postJson('/api/v1/devices/register', [
+            'device_token' => 'aliased_device_token_888',
+        ]);
+        $response2->assertStatus(200);
+        $this->assertDatabaseHas('device_tokens', [
+            'user_id' => $this->customer->id,
+            'token' => 'aliased_device_token_888',
+        ]);
+    }
+
+    public function test_notification_event_toggle_disables_specific_customer_notification(): void
+    {
+        RestaurantSetting::set('firebase_notifications_enabled', true, 'notifications', 'boolean');
+        // Only enable order_confirmed; disable order_placed
+        RestaurantSetting::set('firebase_customer_events', ['order_confirmed'], 'notifications', 'json');
+
+        $firebaseService = app(FirebaseService::class);
+        $this->assertFalse($firebaseService->isEventEnabled('order_placed', 'customer'));
+        $this->assertTrue($firebaseService->isEventEnabled('order_confirmed', 'customer'));
+
+        DeviceToken::create([
+            'user_id' => $this->customer->id,
+            'token' => 'customer_token_evt_test',
+            'device_type' => 'android',
+            'is_active' => true,
+        ]);
+
+        // Attempt sending disabled event
+        $res = $firebaseService->sendToUser($this->customer, 'order_placed', ['order_number' => '1001']);
+        $this->assertFalse($res['success']);
+        $this->assertStringContainsString('disabled', $res['message']);
+    }
+
+    public function test_configuration_status_validates_key_syntax(): void
+    {
+        $firebaseService = app(FirebaseService::class);
+
+        // 1. Corrupt key format
+        RestaurantSetting::set('firebase_notifications_enabled', true, 'notifications', 'boolean');
+        RestaurantSetting::set('firebase_project_id', 'test-proj', 'notifications');
+        RestaurantSetting::set('firebase_client_email', 'test@test.com', 'notifications');
+        RestaurantSetting::set('firebase_private_key', '-----BEGIN PRIVATE KEY-----\nNOT_A_VALID_KEY\n-----END PRIVATE KEY-----', 'notifications');
+
+        $status = $firebaseService->getConfigurationStatus();
+        $this->assertEquals('Invalid Private Key Format', $status['status_label']);
+        $this->assertEquals('red', $status['status_severity']);
+        $this->assertFalse($status['valid_key']);
+
+        // 2. Valid key format
+        $validKey = $this->generateValidTestRsaKey();
+        RestaurantSetting::set('firebase_private_key', $validKey, 'notifications');
+        $validStatus = $firebaseService->getConfigurationStatus();
+        $this->assertEquals('Active & Ready', $validStatus['status_label']);
+        $this->assertEquals('green', $validStatus['status_severity']);
+        $this->assertTrue($validStatus['valid_key']);
+    }
+
+    public function test_push_dispatch_failure_returns_actionable_diagnostics_without_exposing_secrets(): void
+    {
+        $validKey = $this->generateValidTestRsaKey();
+
+        RestaurantSetting::set('firebase_notifications_enabled', true, 'notifications', 'boolean');
+        RestaurantSetting::set('firebase_project_id', 'test-diagnostic-project', 'notifications');
+        RestaurantSetting::set('firebase_client_email', 'service@test-diagnostic-project.iam.gserviceaccount.com', 'notifications');
+        RestaurantSetting::set('firebase_private_key', $validKey, 'notifications');
+
+        // Mock Google OAuth2 to succeed with test token
+        Http::fake([
+            'https://oauth2.googleapis.com/token' => Http::response([
+                'access_token' => 'mock_google_oauth_bearer_token',
+                'expires_in' => 3600,
+            ], 200),
+            // Mock FCM HTTP v1 to return 403 PERMISSION_DENIED
+            'https://fcm.googleapis.com/v1/projects/test-diagnostic-project/messages:send' => Http::response([
+                'error' => [
+                    'code' => 403,
+                    'message' => 'Firebase Cloud Messaging API has not been used in project test-diagnostic-project before or it is disabled.',
+                    'status' => 'PERMISSION_DENIED',
+                ],
+            ], 403),
+        ]);
+
+        $firebaseService = app(FirebaseService::class);
+        $result = $firebaseService->sendToToken('test_device_token_xyz', 'Test Title', 'Test Body');
+
+        $this->assertFalse($result['success']);
+        $this->assertEquals(403, $result['http_status']);
+        $this->assertEquals('PERMISSION_DENIED', $result['error_code']);
+        $this->assertStringContainsString('Firebase Cloud Messaging API is disabled', $result['error']);
+
+        // Check NotificationLog
+        $this->assertDatabaseHas('notification_logs', [
+            'device_token' => 'test_device_token_xyz',
+            'status' => NotificationLog::STATUS_FAILED,
+        ]);
+
+        $log = NotificationLog::where('device_token', 'test_device_token_xyz')->latest()->first();
+        $this->assertStringContainsString('[PERMISSION_DENIED]', $log->error_message);
+        // Ensure secrets are not leaked
+        $this->assertStringNotContainsString($validKey, $log->error_message);
+        $this->assertStringNotContainsString('mock_google_oauth_bearer_token', $log->error_message);
+    }
+
+    public function test_order_placed_notification_links_to_registered_user_by_phone(): void
+    {
+        Queue::fake();
+
+        // Customer has registered device token
+        DeviceToken::create([
+            'user_id' => $this->customer->id,
+            'token' => 'customer_token_phone_matched',
+            'device_type' => 'android',
+            'is_active' => true,
+        ]);
+
+        $cartService = app(CartService::class);
+        $cartService->add($this->product->id, 1);
+
+        $orderService = app(OrderService::class);
+        // Order placed WITHOUT passing $user object, but matching customer phone
+        $order = $orderService->createOrder([
+            'customer_name' => 'John By Phone',
+            'customer_phone' => '+91 9876543211', // Matches $this->customer->phone
+            'payment_method' => 'cash_on_delivery',
+            'order_type' => Order::TYPE_PICKUP,
+        ]);
+
+        $this->assertEquals($this->customer->id, $order->user_id);
+
+        Queue::assertPushed(SendFirebasePushNotificationJob::class, function ($job) {
+            return $job->eventType === 'order_placed' && $job->target === $this->customer->id;
+        });
+    }
 }

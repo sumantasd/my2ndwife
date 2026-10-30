@@ -42,9 +42,24 @@ Route::prefix('v1')->group(function () {
     });
 
     // Device Token Management (FCM Push Notifications for Android / iOS)
-    Route::middleware(['auth:sanctum', 'throttle:60,1'])->prefix('devices')->group(function () {
-        Route::post('/register', [\App\Http\Controllers\Api\v1\ApiDeviceTokenController::class, 'register']);
-        Route::post('/remove', [\App\Http\Controllers\Api\v1\ApiDeviceTokenController::class, 'remove']);
-        Route::get('/my-tokens', [\App\Http\Controllers\Api\v1\ApiDeviceTokenController::class, 'myTokens']);
+    Route::middleware(['auth:sanctum', 'throttle:60,1'])->group(function () {
+        Route::post('/devices/register', [\App\Http\Controllers\Api\v1\ApiDeviceTokenController::class, 'register']);
+        Route::post('/devices/remove', [\App\Http\Controllers\Api\v1\ApiDeviceTokenController::class, 'remove']);
+        Route::get('/devices/my-tokens', [\App\Http\Controllers\Api\v1\ApiDeviceTokenController::class, 'myTokens']);
+
+        // Singular & direct aliases to prevent 404 with Android Retrofit integrations
+        Route::post('/device/register', [\App\Http\Controllers\Api\v1\ApiDeviceTokenController::class, 'register']);
+        Route::post('/device-token', [\App\Http\Controllers\Api\v1\ApiDeviceTokenController::class, 'register']);
+        Route::post('/device-tokens', [\App\Http\Controllers\Api\v1\ApiDeviceTokenController::class, 'register']);
     });
+});
+
+// Non-versioned fallbacks for mobile apps configuring baseUrl ending in /api/
+Route::middleware(['auth:sanctum', 'throttle:60,1'])->group(function () {
+    Route::post('/devices/register', [\App\Http\Controllers\Api\v1\ApiDeviceTokenController::class, 'register']);
+    Route::post('/devices/remove', [\App\Http\Controllers\Api\v1\ApiDeviceTokenController::class, 'remove']);
+    Route::get('/devices/my-tokens', [\App\Http\Controllers\Api\v1\ApiDeviceTokenController::class, 'myTokens']);
+    Route::post('/device/register', [\App\Http\Controllers\Api\v1\ApiDeviceTokenController::class, 'register']);
+    Route::post('/device-token', [\App\Http\Controllers\Api\v1\ApiDeviceTokenController::class, 'register']);
+    Route::post('/device-tokens', [\App\Http\Controllers\Api\v1\ApiDeviceTokenController::class, 'register']);
 });

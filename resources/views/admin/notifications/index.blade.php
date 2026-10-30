@@ -9,12 +9,25 @@
     <!-- Top Action Bar -->
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-3xl border border-[#F0E6EC] shadow-sm">
         <div>
-            <div class="flex items-center gap-2">
+            <div class="flex items-center gap-2 flex-wrap">
                 <span class="text-xl">🔔</span>
                 <h3 class="font-extrabold text-[#25232A] text-lg">Firebase Push Notifications</h3>
-                <span class="text-xs font-bold px-2.5 py-0.5 rounded-full border {{ $configStatus['enabled'] ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-gray-100 text-gray-500 border-gray-200' }}">
+                @php
+                    $badgeClass = match($configStatus['status_severity'] ?? 'gray') {
+                        'green' => 'bg-emerald-50 text-emerald-700 border-emerald-200',
+                        'amber' => 'bg-amber-50 text-amber-700 border-amber-200',
+                        'red' => 'bg-rose-50 text-rose-700 border-rose-200',
+                        default => 'bg-gray-100 text-gray-500 border-gray-200',
+                    };
+                @endphp
+                <span class="text-xs font-bold px-2.5 py-0.5 rounded-full border {{ $badgeClass }}">
                     {{ $configStatus['status_label'] }}
                 </span>
+                @if($configStatus['file_loaded'] ?? false)
+                    <span class="text-xs font-bold px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200">
+                        Service Account JSON Loaded
+                    </span>
+                @endif
             </div>
             <p class="text-gray-500 text-xs mt-1">
                 Real-time delivery status, failed notification triage, live test dispatcher, and Android/iOS device token monitoring.

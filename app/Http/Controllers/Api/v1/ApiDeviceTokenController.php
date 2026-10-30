@@ -14,6 +14,15 @@ class ApiDeviceTokenController extends Controller
      */
     public function register(Request $request): JsonResponse
     {
+        // Support common mobile payload parameter aliases (token, fcm_token, device_token)
+        $rawToken = $request->input('token') ?? $request->input('fcm_token') ?? $request->input('device_token');
+        if ($rawToken) {
+            $request->merge(['token' => trim((string) $rawToken)]);
+        }
+        if ($request->has('device_type')) {
+            $request->merge(['device_type' => strtolower(trim((string) $request->input('device_type')))]);
+        }
+
         $validated = $request->validate([
             'token' => ['required', 'string', 'max:500'],
             'device_type' => ['nullable', 'string', 'in:android,ios,web'],
@@ -23,11 +32,18 @@ class ApiDeviceTokenController extends Controller
 
         $user = $request->user();
 
-        // If this token was previously bound to another user, re-assign it to the current user to prevent cross-account delivery
+        // Disassociate token from any other user to prevent cross-account push deliveries
+        DeviceToken::where('token', $validated['token'])
+            ->where('user_id', '!=', $user->id)
+            ->delete();
+
+        // Register or reactivate token for the current authenticated user
         $deviceToken = DeviceToken::updateOrCreate(
-            ['token' => $validated['token']],
             [
                 'user_id' => $user->id,
+                'token' => $validated['token'],
+            ],
+            [
                 'device_type' => $validated['device_type'] ?? 'android',
                 'device_model' => $validated['device_model'] ?? null,
                 'app_version' => $validated['app_version'] ?? null,
@@ -52,6 +68,11 @@ class ApiDeviceTokenController extends Controller
      */
     public function remove(Request $request): JsonResponse
     {
+        $rawToken = $request->input('token') ?? $request->input('fcm_token') ?? $request->input('device_token');
+        if ($rawToken) {
+            $request->merge(['token' => trim((string) $rawToken)]);
+        }
+
         $validated = $request->validate([
             'token' => ['required', 'string'],
         ]);

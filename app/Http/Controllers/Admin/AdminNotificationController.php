@@ -125,9 +125,15 @@ class AdminNotificationController extends Controller
             return back()->with('success', $msg);
         }
 
-        $errorMsg = 'Failed to send test push notification: ' . ($result['error'] ?? 'Unknown error');
+        $errorMsg = ($result['error'] ?? 'Failed to dispatch push notification.');
         if ($request->wantsJson() || $request->ajax()) {
-            return response()->json(['success' => false, 'error' => $errorMsg], 422);
+            return response()->json([
+                'success' => false,
+                'error' => $errorMsg,
+                'http_status' => $result['http_status'] ?? 422,
+                'error_code' => $result['error_code'] ?? 'DISPATCH_FAILED',
+                'log_id' => $result['log_id'] ?? null,
+            ], 422);
         }
         return back()->with('error', $errorMsg);
     }

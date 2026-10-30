@@ -6,15 +6,50 @@ use App\Jobs\SendFirebasePushNotificationJob;
 use App\Models\Order;
 use App\Models\User;
 use Exception;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 
 class NotificationDispatcherService
 {
     /**
+     * Deduplication helper using atomic cache lock to prevent duplicate notifications
+     * from concurrent callbacks, model listeners, or rapid status transitions.
+     */
+    protected function shouldDispatch(int $orderId, string $eventType): bool
+    {
+        $cacheKey = "fcm_dedup_{$orderId}_{$eventType}";
+        return Cache::add($cacheKey, true, 45);
+    }
+
+    /**
+     * Resolve user ID for customer push, falling back to matching phone number
+     */
+    protected function resolveCustomerUserId(Order $order): ?int
+    {
+        if ($order->user_id) {
+            return $order->user_id;
+        }
+
+        if (!empty($order->customer_phone)) {
+            $matchedUser = User::findByPhone($order->customer_phone);
+            if ($matchedUser) {
+                return $matchedUser->id;
+            }
+        }
+
+        return null;
+    }
+
+    /**
      * Dispatch notifications when an order is placed (COD or verified Online)
      */
     public function dispatchOrderPlaced(Order $order): void
     {
+        if (!$this->shouldDispatch($order->id, 'order_placed')) {
+            Log::info("NotificationDispatcherService: Duplicate order_placed suppressed for order #{$order->order_number}");
+            return;
+        }
+
         $placeholders = [
             'order_number' => $order->order_number,
             'customer_name' => $order->customer_name,
@@ -28,9 +63,10 @@ class NotificationDispatcherService
             'type' => 'order_placed',
         ];
 
-        // 1. Notify Customer (if registered user)
-        if ($order->user_id) {
-            SendFirebasePushNotificationJob::dispatch('user', $order->user_id, 'order_placed', $placeholders, $data);
+        // 1. Notify Customer (if registered user or matched phone)
+        $customerId = $this->resolveCustomerUserId($order);
+        if ($customerId) {
+            SendFirebasePushNotificationJob::dispatch('user', $customerId, 'order_placed', $placeholders, $data);
         }
 
         // 2. Notify Admin
@@ -42,6 +78,11 @@ class NotificationDispatcherService
      */
     public function dispatchPaymentSuccessful(Order $order, float $amount): void
     {
+        if (!$this->shouldDispatch($order->id, 'payment_successful')) {
+            Log::info("NotificationDispatcherService: Duplicate payment_successful suppressed for order #{$order->order_number}");
+            return;
+        }
+
         $placeholders = [
             'order_number' => $order->order_number,
             'customer_name' => $order->customer_name,
@@ -55,8 +96,9 @@ class NotificationDispatcherService
             'type' => 'payment_successful',
         ];
 
-        if ($order->user_id) {
-            SendFirebasePushNotificationJob::dispatch('user', $order->user_id, 'payment_successful', $placeholders, $data);
+        $customerId = $this->resolveCustomerUserId($order);
+        if ($customerId) {
+            SendFirebasePushNotificationJob::dispatch('user', $customerId, 'payment_successful', $placeholders, $data);
         }
 
         SendFirebasePushNotificationJob::dispatch('role', 'admin', 'admin_payment_verified', $placeholders, $data);
@@ -67,6 +109,10 @@ class NotificationDispatcherService
      */
     public function dispatchPaymentFailed(Order $order, ?string $reason = null): void
     {
+        if (!$this->shouldDispatch($order->id, 'payment_failed')) {
+            return;
+        }
+
         $placeholders = [
             'order_number' => $order->order_number,
             'customer_name' => $order->customer_name,
@@ -79,8 +125,9 @@ class NotificationDispatcherService
             'type' => 'payment_failed',
         ];
 
-        if ($order->user_id) {
-            SendFirebasePushNotificationJob::dispatch('user', $order->user_id, 'payment_failed', $placeholders, $data);
+        $customerId = $this->resolveCustomerUserId($order);
+        if ($customerId) {
+            SendFirebasePushNotificationJob::dispatch('user', $customerId, 'payment_failed', $placeholders, $data);
         }
 
         SendFirebasePushNotificationJob::dispatch('role', 'admin', 'admin_payment_failed', $placeholders, $data);
@@ -91,6 +138,15 @@ class NotificationDispatcherService
      */
     public function dispatchOrderStatusChanged(Order $order, string $newStatus, ?string $oldStatus = null): void
     {
+        if ($newStatus === $oldStatus) {
+            return;
+        }
+
+        if (!$this->shouldDispatch($order->id, "status_{$newStatus}")) {
+            Log::info("NotificationDispatcherService: Duplicate status transition ({$newStatus}) suppressed for order #{$order->order_number}");
+            return;
+        }
+
         $placeholders = [
             'order_number' => $order->order_number,
             'customer_name' => $order->customer_name,
@@ -107,22 +163,24 @@ class NotificationDispatcherService
             'deep_link' => route('order.track', $order->tracking_token),
         ];
 
+        $customerId = $this->resolveCustomerUserId($order);
+
         switch ($newStatus) {
             case Order::STATUS_ACCEPTED:
-                if ($order->user_id) {
-                    SendFirebasePushNotificationJob::dispatch('user', $order->user_id, 'order_confirmed', $placeholders, $data);
+                if ($customerId) {
+                    SendFirebasePushNotificationJob::dispatch('user', $customerId, 'order_confirmed', $placeholders, $data);
                 }
                 break;
 
             case Order::STATUS_PREPARING:
-                if ($order->user_id) {
-                    SendFirebasePushNotificationJob::dispatch('user', $order->user_id, 'order_preparing', $placeholders, $data);
+                if ($customerId) {
+                    SendFirebasePushNotificationJob::dispatch('user', $customerId, 'order_preparing', $placeholders, $data);
                 }
                 break;
 
             case Order::STATUS_READY:
-                if ($order->user_id) {
-                    SendFirebasePushNotificationJob::dispatch('user', $order->user_id, 'food_packed', $placeholders, $data);
+                if ($customerId) {
+                    SendFirebasePushNotificationJob::dispatch('user', $customerId, 'food_packed', $placeholders, $data);
                 }
                 // If delivery order and rider is assigned, send pickup reminder
                 if ($order->isDelivery() && $order->delivery_person_id) {
@@ -134,14 +192,14 @@ class NotificationDispatcherService
                 break;
 
             case Order::STATUS_OUT_FOR_DELIVERY:
-                if ($order->user_id) {
-                    SendFirebasePushNotificationJob::dispatch('user', $order->user_id, 'out_for_delivery', $placeholders, $data);
+                if ($customerId) {
+                    SendFirebasePushNotificationJob::dispatch('user', $customerId, 'out_for_delivery', $placeholders, $data);
                 }
                 break;
 
             case Order::STATUS_DELIVERED:
-                if ($order->user_id) {
-                    SendFirebasePushNotificationJob::dispatch('user', $order->user_id, 'order_delivered', $placeholders, $data);
+                if ($customerId) {
+                    SendFirebasePushNotificationJob::dispatch('user', $customerId, 'order_delivered', $placeholders, $data);
                 }
                 if ($order->delivery_person_id) {
                     SendFirebasePushNotificationJob::dispatch('user', $order->delivery_person_id, 'rider_delivery_completed', $placeholders, $data);
@@ -149,8 +207,8 @@ class NotificationDispatcherService
                 break;
 
             case Order::STATUS_CANCELLED:
-                if ($order->user_id) {
-                    SendFirebasePushNotificationJob::dispatch('user', $order->user_id, 'order_cancelled', $placeholders, $data);
+                if ($customerId) {
+                    SendFirebasePushNotificationJob::dispatch('user', $customerId, 'order_cancelled', $placeholders, $data);
                 }
                 if ($order->delivery_person_id) {
                     SendFirebasePushNotificationJob::dispatch('user', $order->delivery_person_id, 'rider_assignment_cancelled', $placeholders, $data);

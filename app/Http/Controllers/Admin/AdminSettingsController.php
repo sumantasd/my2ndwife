@@ -45,17 +45,26 @@ class AdminSettingsController extends Controller
         }
 
         // Masked secrets for view
+        $firebaseService = app(\App\Services\FirebaseService::class);
+        $firebaseCreds = $firebaseService->getCredentials();
+        if (empty($settings['firebase_project_id']) && !empty($firebaseCreds['project_id'])) {
+            $settings['firebase_project_id'] = $firebaseCreds['project_id'];
+        }
+        if (empty($settings['firebase_client_email']) && !empty($firebaseCreds['client_email'])) {
+            $settings['firebase_client_email'] = $firebaseCreds['client_email'];
+        }
+
         $maskedSecrets = [
             'google_maps_api_key' => $this->maskSecret($settings['google_maps_api_key'] ?? ''),
             'razorpay_key_secret' => $this->maskSecret($settings['razorpay_key_secret'] ?? ''),
             'razorpay_webhook_secret' => $this->maskSecret($settings['razorpay_webhook_secret'] ?? ''),
             'sms_api_key' => $this->maskSecret($settings['sms_api_key'] ?? ''),
             'whatsapp_api_key' => $this->maskSecret($settings['whatsapp_api_key'] ?? ''),
-            'firebase_private_key' => $this->maskSecret($settings['firebase_private_key'] ?? ''),
+            'firebase_private_key' => $this->maskSecret($settings['firebase_private_key'] ?? ($firebaseCreds['private_key'] ?? '')),
         ];
 
         $pages = \App\Models\Page::orderBy('display_order')->get();
-        $firebaseStatus = app(\App\Services\FirebaseService::class)->getConfigurationStatus();
+        $firebaseStatus = $firebaseService->getConfigurationStatus();
 
         return view('admin.settings.index', compact('settings', 'banners', 'heroBanners', 'offer1', 'offer2', 'openingHours', 'maskedSecrets', 'pages', 'firebaseStatus'));
     }
@@ -141,6 +150,7 @@ class AdminSettingsController extends Controller
             'firebase_client_email' => ['nullable', 'string', 'max:150'],
             'firebase_private_key' => ['nullable', 'string'],
             'firebase_service_account_file' => ['nullable', 'file', 'mimetypes:application/json,text/plain,application/octet-stream', 'max:2048'],
+            'firebase_channel_id' => ['nullable', 'string', 'max:100'],
             'firebase_customer_events' => ['nullable', 'array'],
             'firebase_rider_events' => ['nullable', 'array'],
             'firebase_admin_events' => ['nullable', 'array'],
@@ -239,32 +249,56 @@ class AdminSettingsController extends Controller
             }
         }
 
-        // Handle uploaded Firebase Service Account JSON file
+        // Handle uploaded Firebase Service Account JSON file with strict validation
+        $serviceAccountUploaded = false;
         if ($request->hasFile('firebase_service_account_file')) {
-            try {
-                $file = $request->file('firebase_service_account_file');
-                $rawContent = file_get_contents($file->getRealPath());
-                $parsed = json_decode($rawContent, true);
+            $file = $request->file('firebase_service_account_file');
+            $rawContent = file_get_contents($file->getRealPath());
+            $parsed = json_decode($rawContent, true);
 
-                if (is_array($parsed) && !empty($parsed['project_id']) && (($parsed['type'] ?? '') === 'service_account' || !empty($parsed['private_key']))) {
-                    $firebaseDir = storage_path('app/firebase');
-                    if (!\Illuminate\Support\Facades\File::exists($firebaseDir)) {
-                        \Illuminate\Support\Facades\File::makeDirectory($firebaseDir, 0750, true);
-                    }
-
-                    \Illuminate\Support\Facades\File::put($firebaseDir . '/service-account.json', $rawContent);
-
-                    RestaurantSetting::set('firebase_project_id', $parsed['project_id'], 'notifications');
-                    if (!empty($parsed['client_email'])) {
-                        RestaurantSetting::set('firebase_client_email', $parsed['client_email'], 'notifications');
-                    }
-                    if (!empty($parsed['private_key'])) {
-                        RestaurantSetting::set('firebase_private_key', $parsed['private_key'], 'notifications');
-                    }
-                }
-            } catch (Exception $e) {
-                Log::warning('AdminSettingsController: Failed parsing uploaded firebase_service_account_file: ' . $e->getMessage());
+            if (!is_array($parsed)) {
+                return back()->with('error', 'Uploaded Service Account file is not valid JSON format. Existing settings were preserved.')->withInput();
             }
+
+            // Validate required fields
+            $missingFields = [];
+            if (empty($parsed['project_id'])) $missingFields[] = 'project_id';
+            if (empty($parsed['client_email'])) $missingFields[] = 'client_email';
+            if (empty($parsed['private_key'])) $missingFields[] = 'private_key';
+
+            if (!empty($missingFields)) {
+                return back()->with('error', 'Service Account JSON is missing required fields: ' . implode(', ', $missingFields) . '. Existing configuration was preserved.')->withInput();
+            }
+
+            // Cryptographically validate RSA private key format
+            $fs = app(\App\Services\FirebaseService::class);
+            if (!$fs->validatePrivateKeyFormat($parsed['private_key'])) {
+                return back()->with('error', 'Service Account JSON contains an invalid RSA private key format that cannot be parsed by OpenSSL. Existing configuration was preserved.')->withInput();
+            }
+
+            // Valid! Store securely in storage/app/firebase/
+            $firebaseDir = storage_path('app/firebase');
+            if (!\Illuminate\Support\Facades\File::exists($firebaseDir)) {
+                \Illuminate\Support\Facades\File::makeDirectory($firebaseDir, 0750, true);
+            }
+            $targetPath = $firebaseDir . '/service-account.json';
+            \Illuminate\Support\Facades\File::put($targetPath, $rawContent);
+            @chmod($targetPath, 0600);
+
+            // Ensure .gitignore exists in firebase directory to prevent credential leaks
+            $gitignorePath = $firebaseDir . '/.gitignore';
+            if (!\Illuminate\Support\Facades\File::exists($gitignorePath)) {
+                \Illuminate\Support\Facades\File::put($gitignorePath, "*\n!.gitignore\n");
+            }
+
+            RestaurantSetting::set('firebase_project_id', trim((string) $parsed['project_id']), 'notifications');
+            RestaurantSetting::set('firebase_client_email', trim((string) $parsed['client_email']), 'notifications');
+            RestaurantSetting::set('firebase_private_key', $fs->normalizePrivateKey($parsed['private_key']), 'notifications');
+
+            \Illuminate\Support\Facades\Cache::forget(\App\Services\FirebaseService::OAUTH_STATUS_CACHE_KEY);
+            \Illuminate\Support\Facades\Cache::forget(\App\Services\FirebaseService::TOKEN_CACHE_KEY);
+
+            $serviceAccountUploaded = true;
         }
 
         // Handle Event Multi-select Checkboxes for Notifications
@@ -348,6 +382,18 @@ class AdminSettingsController extends Controller
             $allBooleans
         );
         $inputs = $request->except($ignoredKeys);
+
+        // Prevent empty form text inputs from erasing parsed Service Account credentials
+        if ($serviceAccountUploaded) {
+            unset($inputs['firebase_project_id'], $inputs['firebase_client_email']);
+        } else {
+            if (empty($inputs['firebase_project_id']) && RestaurantSetting::get('firebase_project_id')) {
+                unset($inputs['firebase_project_id']);
+            }
+            if (empty($inputs['firebase_client_email']) && RestaurantSetting::get('firebase_client_email')) {
+                unset($inputs['firebase_client_email']);
+            }
+        }
 
         foreach ($inputs as $key => $val) {
             RestaurantSetting::set($key, $val, $section);
@@ -653,5 +699,61 @@ class AdminSettingsController extends Controller
         $settings = RestaurantSetting::getAll();
 
         return view('admin.orders.receipt', compact('order', 'settings'));
+    }
+
+    /**
+     * Parse and cryptographically validate uploaded Firebase Service Account JSON file via AJAX.
+     * Never returns private key to the frontend.
+     */
+    public function parseServiceAccountJson(Request $request): \Illuminate\Http\JsonResponse
+    {
+        $request->validate([
+            'file' => ['required', 'file', 'mimetypes:application/json,text/plain,application/octet-stream', 'max:2048'],
+        ]);
+
+        try {
+            $rawContent = file_get_contents($request->file('file')->getRealPath());
+            $parsed = json_decode($rawContent, true);
+
+            if (!is_array($parsed)) {
+                return response()->json([
+                    'success' => false,
+                    'error' => 'The selected file is not valid JSON.',
+                ], 422);
+            }
+
+            $missing = [];
+            if (empty($parsed['project_id'])) $missing[] = 'project_id';
+            if (empty($parsed['client_email'])) $missing[] = 'client_email';
+            if (empty($parsed['private_key'])) $missing[] = 'private_key';
+
+            if (!empty($missing)) {
+                return response()->json([
+                    'success' => false,
+                    'error' => 'Service Account JSON is missing required fields: ' . implode(', ', $missing),
+                ], 422);
+            }
+
+            $fs = app(\App\Services\FirebaseService::class);
+            if (!$fs->validatePrivateKeyFormat($parsed['private_key'])) {
+                return response()->json([
+                    'success' => false,
+                    'error' => 'The file contains an invalid RSA private key format that cannot be parsed by OpenSSL.',
+                ], 422);
+            }
+
+            return response()->json([
+                'success' => true,
+                'project_id' => trim((string) $parsed['project_id']),
+                'client_email' => trim((string) $parsed['client_email']),
+                'has_private_key' => true,
+                'message' => "Service Account JSON valid for project: '{$parsed['project_id']}'.",
+            ]);
+        } catch (Exception $e) {
+            return response()->json([
+                'success' => false,
+                'error' => 'Failed parsing file: ' . $e->getMessage(),
+            ], 422);
+        }
     }
 }

@@ -53,7 +53,7 @@ class SendFirebasePushNotificationJob implements ShouldQueue
                 $firebaseService->sendToRole($this->target, $this->eventType, $this->placeholders, $this->extraData);
             } elseif ($this->mode === 'token') {
                 $template = $firebaseService->resolveTemplate($this->eventType, $this->placeholders);
-                $firebaseService->sendToToken(
+                $res = $firebaseService->sendToToken(
                     $this->target,
                     $template['title'],
                     $template['body'],
@@ -62,10 +62,17 @@ class SendFirebasePushNotificationJob implements ShouldQueue
                     $this->extraData['user_id'] ?? null,
                     $this->eventType
                 );
+
+                if (!$res['success'] && in_array($res['error_code'] ?? '', ['UNAVAILABLE', 'QUOTA_EXCEEDED'])) {
+                    throw new Exception($res['error'] ?? 'Transient FCM error');
+                }
             }
         } catch (Exception $e) {
-            Log::error("SendFirebasePushNotificationJob Error [{$this->eventType}]: " . $e->getMessage());
-            throw $e;
+            if (str_contains($e->getMessage(), 'UNAVAILABLE') || str_contains($e->getMessage(), 'timed out') || str_contains($e->getMessage(), 'cURL') || str_contains($e->getMessage(), 'QUOTA_EXCEEDED')) {
+                Log::warning("SendFirebasePushNotificationJob Transient Error [{$this->eventType}]: " . $e->getMessage());
+                throw $e;
+            }
+            Log::info("SendFirebasePushNotificationJob [{$this->eventType}] completed with message: " . $e->getMessage());
         }
     }
 }

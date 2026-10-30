@@ -1156,7 +1156,15 @@
                             <h4 class="font-extrabold text-[#25232A] text-sm flex items-center gap-2">
                                 <span>🔥</span> Firebase Cloud Messaging (FCM HTTP v1)
                             </h4>
-                            <span class="text-[10px] font-extrabold px-2 py-0.5 rounded-full border {{ ($firebaseStatus['enabled'] ?? false) ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-gray-100 text-gray-500 border-gray-200' }}">
+                            @php
+                                $fbSeverityClass = match($firebaseStatus['status_severity'] ?? 'gray') {
+                                    'green' => 'bg-emerald-50 text-emerald-700 border-emerald-200',
+                                    'amber' => 'bg-amber-50 text-amber-700 border-amber-200',
+                                    'red' => 'bg-rose-50 text-rose-700 border-rose-200',
+                                    default => 'bg-gray-100 text-gray-500 border-gray-200',
+                                };
+                            @endphp
+                            <span class="text-[10px] font-extrabold px-2 py-0.5 rounded-full border {{ $fbSeverityClass }}">
                                 {{ $firebaseStatus['status_label'] ?? 'Status Unknown' }}
                             </span>
                             @if($firebaseStatus['file_loaded'] ?? false)
@@ -1190,6 +1198,13 @@
                     </div>
 
                     <div class="sm:col-span-2">
+                        <label class="block font-bold text-gray-700 mb-1">Android Notification Channel ID</label>
+                        <input type="text" name="firebase_channel_id" value="{{ $settings['firebase_channel_id'] ?? 'm2w_orders' }}" 
+                               placeholder="e.g. m2w_orders" class="w-full p-2.5 rounded-xl border border-[#F0E6EC] bg-white font-mono text-xs">
+                        <p class="text-[10px] text-gray-400 mt-0.5">Notification channel registered in Android app's NotificationManager (default: <span class="font-mono">m2w_orders</span>).</p>
+                    </div>
+
+                    <div class="sm:col-span-2">
                         <label class="block font-bold text-gray-700 mb-1">Private Key (RSA 256 PEM format)</label>
                         <textarea name="firebase_private_key" rows="3" 
                                   placeholder="-----BEGIN PRIVATE KEY-----&#10;...&#10;-----END PRIVATE KEY-----" 
@@ -1200,9 +1215,12 @@
                     <!-- Upload Service Account JSON -->
                     <div class="sm:col-span-2 p-3.5 rounded-xl bg-white border border-pink-200/70 space-y-1.5">
                         <label class="block font-bold text-[#25232A]">Or Upload Firebase Service Account JSON File</label>
-                        <input type="file" name="firebase_service_account_file" accept=".json,application/json" 
+                        <input type="file" name="firebase_service_account_file" id="firebaseServiceAccountFileInput" 
+                               accept=".json,application/json" 
+                               @change="handleFirebaseServiceAccountFile($event)"
                                class="w-full p-1.5 rounded-xl border border-[#F0E6EC] bg-gray-50/50 file:mr-3 file:py-1 file:px-3 file:rounded-full file:border-0 file:text-xs file:font-bold file:bg-[#FFF3F8] file:text-[#F50070]">
                         <p class="text-[10px] text-gray-400">Uploading your Google Cloud Service Account JSON file automatically populates the Project ID, Client Email, and Private Key, and saves it securely to server storage.</p>
+                        <div id="firebaseJsonStatusMsg" class="hidden text-[11px] font-bold p-2.5 rounded-xl mt-2"></div>
                     </div>
                 </div>
 
@@ -2317,6 +2335,51 @@ function restaurantSettings(config) {
                 };
                 reader.readAsDataURL(file);
             }
+        },
+
+        handleFirebaseServiceAccountFile(event) {
+            const file = event.target.files[0];
+            const statusBox = document.getElementById('firebaseJsonStatusMsg');
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    const parsed = JSON.parse(e.target.result);
+                    const missing = [];
+                    if (!parsed.project_id) missing.push('project_id');
+                    if (!parsed.client_email) missing.push('client_email');
+                    if (!parsed.private_key) missing.push('private_key');
+
+                    if (missing.length > 0) {
+                        if (statusBox) {
+                            statusBox.className = 'text-[11px] font-bold p-3 rounded-xl mt-2 bg-rose-50 text-rose-800 border border-rose-200 block';
+                            statusBox.innerHTML = '⚠️ Invalid Service Account file: missing required keys (' + missing.join(', ') + '). Existing configuration preserved.';
+                        }
+                        return;
+                    }
+
+                    // Populate fields
+                    const projInput = document.querySelector('input[name="firebase_project_id"]');
+                    const emailInput = document.querySelector('input[name="firebase_client_email"]');
+                    const keyArea = document.querySelector('textarea[name="firebase_private_key"]');
+
+                    if (projInput) projInput.value = parsed.project_id;
+                    if (emailInput) emailInput.value = parsed.client_email;
+                    if (keyArea) keyArea.value = '•••••••••••••••••••••••• (RSA Private Key Loaded from File)';
+
+                    if (statusBox) {
+                        statusBox.className = 'text-[11px] font-bold p-3 rounded-xl mt-2 bg-emerald-50 text-emerald-800 border border-emerald-200 block';
+                        statusBox.innerHTML = '✅ Service Account JSON parsed successfully! Project ID: <strong>' + parsed.project_id + '</strong> and Client Email loaded. Click <strong>Save Settings</strong> below to persist securely on the server.';
+                    }
+                } catch (err) {
+                    if (statusBox) {
+                        statusBox.className = 'text-[11px] font-bold p-3 rounded-xl mt-2 bg-rose-50 text-rose-800 border border-rose-200 block';
+                        statusBox.innerHTML = '⚠️ Failed to parse file as JSON: ' + err.message;
+                    }
+                }
+            };
+            reader.readAsText(file);
         }
     };
 }
